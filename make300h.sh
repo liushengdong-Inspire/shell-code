@@ -13,6 +13,7 @@ thread_num=8
 MAKE_UPDATE_API=no
 MAKE_RM_FILE=no
 HELP=no
+MAKE_RELEASE_SUCCESS=1
 
 function note_log
 {
@@ -24,8 +25,9 @@ function note_log
     if [ ! -f $LOG_FILE_PATH ]
     then
         touch $LOG_FILE_PATH
-        chmod 777 $LOG_FILE_PATH
+        chmod 0644 $LOG_FILE_PATH
     fi
+    DATE=`date "+%Y%m%d-%H%M%S"`
     echo "$DATE($$): ${1}" >> $LOG_FILE_PATH
 }
 
@@ -46,6 +48,7 @@ function begin_to_make_program
     if [ "$1" == "" ]
     then
         red "$1 unexpect,exit!"
+        MAKE_RELEASE_SUCCESS=0
         return
     fi
     
@@ -60,14 +63,17 @@ function begin_to_make_program
             if [ $? -ne 0 ]
             then
                 red "rm ./* -rf"
+                MAKE_RELEASE_SUCCESS=0
                 popd
                 return
             fi
+
             repo sync
             if [ $? -ne 0 ]
             then
                 red "repo sync"
                 popd
+                MAKE_RELEASE_SUCCESS=0
                 return
             fi
         fi
@@ -79,6 +85,7 @@ function begin_to_make_program
             if [ $? -ne 0 ]
             then
                 red "repo forall error!"
+                MAKE_RELEASE_SUCCESS=0
                 popd
                 return
             else
@@ -90,6 +97,7 @@ function begin_to_make_program
             then
                 red "make clean error!"
                 popd
+                MAKE_RELEASE_SUCCESS=0
                 return
             else
                 green "make clean success!"
@@ -126,6 +134,7 @@ function begin_to_make_program
             then
                 red "export PRODUCT_TARGET failed!"
                 popd
+                MAKE_RELEASE_SUCCESS=0
                 return
             else
                 green "export PRODUCT_TARGET=$PRODUCT_TARGET success!"
@@ -139,19 +148,21 @@ function begin_to_make_program
                 then
                     red "export HISILICON_SECURITY_L2_FLAG failed!"
                     popd
+                    MAKE_RELEASE_SUCCESS=0
                     return
                 else
-                    green "export HISILICON_SECURITY_L2_FLAG=$HISILICON_SECURITY_L2_FLAG"
+                    green "export HISILICON_SECURITY_L2_FLAG=$HISILICON_SECURITY_L2_FLAG success!"
                 fi
 
                 source build/swfastbootenv/fastboot-hi3798mv31dms1-M8273-L2.env
                 if [ $? -ne 0 ]
                 then
-                    red "source build/swfastbootenv/fastboot-hi3798mv31dms1-M8273-L2.env"
+                    red "source build/swfastbootenv/fastboot-hi3798mv31dms1-M8273-L2.env failed!"
+                    MAKE_RELEASE_SUCCESS=0
                     popd
                     return
                 else
-                    green "source build/swfastbootenv/fastboot-hi3798mv31dms1-M8273-L2.env failed!"
+                    green "source build/swfastbootenv/fastboot-hi3798mv31dms1-M8273-L2.env success!"
                 fi
                 
                 ### 判断为编译大系统的时候
@@ -160,17 +171,19 @@ function begin_to_make_program
                     source build/envsetup.sh
                     if [ $? -ne 0 ]
                     then
-                        red "repo sync"
+                        red "source build/envsetup.sh failed!"
                         popd
+                        MAKE_RELEASE_SUCCESS=0
                         return
                     else
-                        green "source build/envsetup.sh"
+                        green "source build/envsetup.sh success!"
                     fi
 
                     lunch Hi3798MV300H-eng
                     if [ $? -ne 0 ]
                     then
                         red "lunch Hi3798MV300H-eng failed!"
+                        MAKE_RELEASE_SUCCESS=0
                         popd
                         return
                     else
@@ -182,6 +195,7 @@ function begin_to_make_program
                     then
                         red "make bigfish common_pkg=y -j$thread_num failed!"
                         popd
+                        MAKE_RELEASE_SUCCESS=0
                         return
                     else
                         green "make bigfish common_pkg=y -j$thread_num success!"
@@ -193,6 +207,7 @@ function begin_to_make_program
                 then
                     red "source build/swfastbootenv/fastboot-hi3798mv2dmc-M8238-L2.env failed!"
                     popd
+                    MAKE_RELEASE_SUCCESS=0
                     return
                 else
                     green "source build/swfastbootenv/fastboot-hi3798mv2dmc-M8238-L2.env success!"
@@ -206,6 +221,7 @@ function begin_to_make_program
                     then
                         red "source build/envsetup.sh failed!"
                         popd
+                        MAKE_RELEASE_SUCCESS=0
                         return
                     else
                         green "source build/envsetup.sh success!"
@@ -216,6 +232,7 @@ function begin_to_make_program
                     then
                         red "lunch Hi3798MV300-eng failed!"
                         popd
+                        MAKE_RELEASE_SUCCESS=0
                         return
                     else 
                         green "lunch Hi3798MV300-eng success!"
@@ -226,6 +243,7 @@ function begin_to_make_program
                     then
                         red "make bigfish diff=y -j$thread_num failed!"
                         popd
+                        MAKE_RELEASE_SUCCESS=0
                         return
                     else 
                         green "make bigfish diff=y -j$thread_num success!"
@@ -243,6 +261,7 @@ function begin_to_make_program
             if [ $? -ne 0 ]
             then
                 red "source build/swfastbootenv/fastboot-hi3798mv31dms1-M8273-L2.env failed!"
+                MAKE_RELEASE_SUCCESS=0
                 popd
                 return
             else
@@ -255,6 +274,7 @@ function begin_to_make_program
         then
             red "source build/envsetup.sh failed!"
             popd
+            MAKE_RELEASE_SUCCESS=0
             return
         else
             green "source build/envsetup.sh success!"
@@ -265,6 +285,7 @@ function begin_to_make_program
         if [ $? -ne 0 ]
         then
             red "lunch $lunch_name failed!"
+            MAKE_RELEASE_SUCCESS=0
             popd
             return
         else
@@ -278,6 +299,7 @@ function begin_to_make_program
             then
                 red "make update-api failed!"
                 popd
+                MAKE_RELEASE_SUCCESS=0
                 return
             else
                 green "make update-api success!"
@@ -293,6 +315,7 @@ function begin_to_make_program
                 then
                     red "make -j$thread_num failed!"
                     popd
+                    MAKE_RELEASE_SUCCESS=0
                     return
                 else
                     green "make -j$thread_num success!"
@@ -418,8 +441,15 @@ function main_function
                 cmd_path=${type}
                 current_path=`basename ${cmd_path}`
                 green "begin to make $MAKE_TYPE $current_path version sdk!"
+                MAKE_RELEASE_SUCCESS=1
                 begin_to_make_program $current_path $thread_num
-                green "success to make $current_path !"
+                if [ $MAKE_RELEASE_SUCCESS == "1" ]
+                then
+                    green "success to make $current_path !"
+                elif [ $MAKE_RELEASE_SUCCESS == "0" ]
+                then
+                    red "make $current_path failed!"
+                fi
                 green " "
                 echo "make $current_path log:"
                 cat $LOG_FILE_PATH
