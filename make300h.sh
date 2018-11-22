@@ -66,15 +66,19 @@ function begin_to_make_program
                 MAKE_RELEASE_SUCCESS=0
                 popd
                 return
+            else
+                green "rm ./* -rf success!"
             fi
 
             repo sync
             if [ $? -ne 0 ]
             then
-                red "repo sync"
+                red "repo sync failed!"
                 popd
                 MAKE_RELEASE_SUCCESS=0
                 return
+            else
+                green "repo sync success!"
             fi
         fi
 
