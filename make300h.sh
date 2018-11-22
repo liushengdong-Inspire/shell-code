@@ -355,7 +355,7 @@ then
             match_flag=1
         elif [ "${cmd_array[$i]}" == "-j" ]
         then
-            if [[ ${cmd_array[$(($i+1))]} -lt 0 || ${cmd_array[$(($i+1))]} -gt 64 || ${cmd_array[$(($i+1))]} == "" ]]
+            if [[ ${cmd_array[$(($i+1))]} -lt 0 || ${cmd_array[$(($i+1))]} -gt 256 || ${cmd_array[$(($i+1))]} == "" ]]
             then
                 red "cmd error with empty thread number!"
                 exit 0
