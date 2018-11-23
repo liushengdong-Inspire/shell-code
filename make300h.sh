@@ -96,16 +96,6 @@ function begin_to_make_program
                 green "repo forall success!"
             fi
  
-            make clean
-            if [ $? -ne 0 ]
-            then
-                red "make clean error!"
-                popd
-                MAKE_RELEASE_SUCCESS=0
-                return
-            else
-                green "make clean success!"
-            fi
         fi
 
         ## 根据不同大系统，选择不同的 lunch
@@ -114,7 +104,7 @@ function begin_to_make_program
             green "android_source"
         elif [ "$1" == "mv200_kk" ]
         then
-            green "mv200_kk"
+            lunch_name="Hi3798MV200-eng"
         elif [ "$1" == "Hisi3798mv100" ]
         then
             lunch_name="Hi3798MV100-eng"
@@ -192,6 +182,17 @@ function begin_to_make_program
                         return
                     else
                         green "lunch Hi3798MV300H-eng success!"
+                    fi
+
+                    make clean
+                    if [ $? -ne 0 ]
+                    then
+                        red "make clean error!"
+                        popd
+                        MAKE_RELEASE_SUCCESS=0
+                        return
+                    else
+                        green "make clean success!"
                     fi
 
                     make bigfish common_pkg=y -j$thread_num
@@ -314,6 +315,16 @@ function begin_to_make_program
         then
             if [ "$1" != "mv300h_20181011" ]
             then
+                make clean
+                if [ $? -ne 0 ]
+                then
+                    red "make clean error!"
+                    popd
+                    MAKE_RELEASE_SUCCESS=0
+                    return
+                else
+                    green "make clean success!"
+                fi
                 make -j$thread_num
                 if [ $? -ne 0 ]
                 then
