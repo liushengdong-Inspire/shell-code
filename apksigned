@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+
+## 使用菜单
+function Use_menu
+{
+	echo "-------------------------------------------"
+	echo "命令参数不合法!"
+	echo "`basename ${1}` 使用方法如下："
+	echo "`basename ${1}` [apk 源] <签名apk存放地址>"
+	echo "如果参数只有一个，默认会在当前目录下签名APK"
+	echo "-------------------------------------------"
+}
+
+function Judge_param_is_path_or_file
+{
+	param_list=("$@")
+	unsigned_apk_path=""
+	for param in ${param_list[@]}
+	do
+
+		src_path=${param%/*}
+		file_path=${param##*/}
+		
+		## 路径或者文件是否存在
+		if [[ ! -d ${src_path} || ! -f ${src_path}/${file_path} ]]
+		then
+			## 源文件，即需要签名的文件
+			if [ ${param} == ${param_list[0]} ]
+			then
+				echo "source doesn't exists!"
+				exit 0
+			else
+				if [ ! -d ${src_path} ]
+				then
+					echo "file doesn't exists!"
+					exit 0
+				else
+					java -jar ${SIGNAPK_JAR} ${PLATFORM_X509_PEM} ${PLATFORM_PK8} ${unsigned_apk_path} ${src_path}/${file_path}
+					echo "signed ${file_path} successful in ${unsigned_apk_path}"
+				fi
+			fi
+		fi
+		
+		if [ ${param} == ${param_list[0]} ]
+		then
+			unsigned_apk_path=${param}
+		fi
+
+		if [ $# -eq 1 ]
+		then
+			java -jar ${SIGNAPK_JAR} ${PLATFORM_X509_PEM} ${PLATFORM_PK8} ${param} ${CURRENT_SIGNED_PATH}
+			echo "signed ${file_path} successful in ${CURRENT_SIGNED_PATH}"
+		fi
+	done
+}
+
+function param_with_1_to_deal
+{
+	current_path=`pwd`
+	source_apk=$1
+	source_apk_name=`basename ${source_apk}`
+	apk_name=${source_apk_name%%.apk*}
+	signed_apk_name=${apk_name}_signed.apk
+	if [ -f ${current_path}/${signed_apk_name} ]
+	then
+		rm -rf ${current_path}/${signed_apk_name}
+	fi
+	CURRENT_SIGNED_PATH=${current_path}/${signed_apk_name}
+}
+
+CURRENT_SIGNED_PATH=""
+SIGNED_TOOL_PATH=/home/inspire/bin/javasigned
+PLATFORM_PK8=${SIGNED_TOOL_PATH}/platform.pk8
+PLATFORM_X509_PEM=${SIGNED_TOOL_PATH}/platform.x509.pem
+SIGNAPK_JAR=${SIGNED_TOOL_PATH}/signapk.jar
+## 判断是否携带参数，至少携带一个参数
+if [[ $# -ge 1 && $# -lt 3 ]]
+then
+	## 携带一个参数
+	if [ $# -eq 1 ]
+	then
+		param_with_1_to_deal $1
+		Judge_param_is_path_or_file $1
+	## 携带了两个参数
+	elif [ $# -eq 2 ]
+	then
+		if [ "$1" == "$2" ]
+		then
+			echo "src=$1"
+			echo "des=$2"
+			echo "src is same with des!!!"
+			exit 0
+		else
+			Judge_param_is_path_or_file $1 $2
+		fi
+	fi
+else
+	Use_menu $0
+fi
+
