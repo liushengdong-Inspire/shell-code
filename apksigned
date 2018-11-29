@@ -20,7 +20,6 @@ function Judge_param_is_path_or_file
 
 		src_path=${param%/*}
 		file_path=${param##*/}
-		
 		## 路径或者文件是否存在
 		if [[ ! -d ${src_path} || ! -f ${src_path}/${file_path} ]]
 		then
@@ -35,21 +34,41 @@ function Judge_param_is_path_or_file
 					echo "file doesn't exists!"
 					exit 0
 				else
+					if [ "${src_path}" == "" ]
+					then
+						src_path=.
+					fi
+					
+					if [ -f ${src_path}/${file_path} ]
+					then
+						rm -rf ${src_path}/${file_path}
+					fi
 					java -jar ${SIGNAPK_JAR} ${PLATFORM_X509_PEM} ${PLATFORM_PK8} ${unsigned_apk_path} ${src_path}/${file_path}
 					echo "signed ${file_path} successful in ${unsigned_apk_path}"
+					exit 0
 				fi
 			fi
+		fi
+		
+		if [ "${param}" == "${param_list[1]}" ]
+		then
+			rm -rf ${param}
+			java -jar ${SIGNAPK_JAR} ${PLATFORM_X509_PEM} ${PLATFORM_PK8} ${unsigned_apk_path} ${param}
+			echo "signed ${file_path} successful in ${unsigned_apk_path}"
+			exit 0
 		fi
 		
 		if [ ${param} == ${param_list[0]} ]
 		then
 			unsigned_apk_path=${param}
 		fi
-
+		
+		## 只携带了一个参数情况下,只要获取到了源APK路径和名称，就当前目录下签名
 		if [ $# -eq 1 ]
 		then
-			java -jar ${SIGNAPK_JAR} ${PLATFORM_X509_PEM} ${PLATFORM_PK8} ${param} ${CURRENT_SIGNED_PATH}
+			java -jar ${SIGNAPK_JAR} ${PLATFORM_X509_PEM} ${PLATFORM_PK8} ${unsigned_apk_path} ${CURRENT_SIGNED_PATH}
 			echo "signed ${file_path} successful in ${CURRENT_SIGNED_PATH}"
+			exit 0
 		fi
 	done
 }
