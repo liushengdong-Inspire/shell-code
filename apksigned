@@ -20,6 +20,10 @@ function Judge_param_is_path_or_file
 
 		src_path=${param%/*}
 		file_path=${param##*/}
+		if [ "${src_path}" == "" ]
+		then
+			src_path=./
+		fi
 		## 路径或者文件是否存在
 		if [[ ! -d ${src_path} || ! -f ${src_path}/${file_path} ]]
 		then
@@ -34,11 +38,6 @@ function Judge_param_is_path_or_file
 					echo "file doesn't exists!"
 					exit 0
 				else
-					if [ "${src_path}" == "" ]
-					then
-						src_path=.
-					fi
-					
 					if [ -f ${src_path}/${file_path} ]
 					then
 						rm -rf ${src_path}/${file_path}
