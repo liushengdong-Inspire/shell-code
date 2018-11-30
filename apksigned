@@ -46,16 +46,35 @@ function Source_apk_exist
 }
 
 CURRENT_SIGNED_PATH=""
-SIGNED_TOOL_PATH=/home/inspire/bin/javasigned
-PLATFORM_PK8=${SIGNED_TOOL_PATH}/platform.pk8
-PLATFORM_X509_PEM=${SIGNED_TOOL_PATH}/platform.x509.pem
-SIGNAPK_JAR=${SIGNED_TOOL_PATH}/signapk.jar
+SIGNED_TOOL_PATH=""
+PLATFORM_PK8=""
+PLATFORM_X509_PEM=""
+SIGNAPK_JAR=""
 
 ## 判断是否携带参数，至少携带一个参数
 if [[ $# -ge 1 && $# -lt 3 ]]
 then
+
 	## 判断输入的未签名的源文件是否存在以及是否为 APK 文件
 	Source_apk_exist $1
+
+	bin_path=""
+	current_bin_path=`basename $0`
+	## 获取命令的路径
+	if [ "$0" == "${current_bin_path}" ]
+	then
+		current_bin_path=`which apksigned`
+		bin_path=${current_bin_path%/*}
+	elif [ "$0" != "${current_bin_path}" ]
+	then
+		current_bin_path=$0
+		bin_path=${current_bin_path%/*}
+	fi
+	SIGNED_TOOL_PATH=${bin_path}/javasigned
+	PLATFORM_PK8=${SIGNED_TOOL_PATH}/platform.pk8
+	PLATFORM_X509_PEM=${SIGNED_TOOL_PATH}/platform.x509.pem
+	SIGNAPK_JAR=${SIGNED_TOOL_PATH}/signapk.jar
+
 	if [ "$1" == "$2" ]
 	then
 		echo "源文件 $1 和输出签名文件 $2 一致!!!"
@@ -91,9 +110,15 @@ then
 		fi
 		CURRENT_SIGNED_PATH=$2
 	fi
-	java -jar ${SIGNAPK_JAR} ${PLATFORM_X509_PEM} ${PLATFORM_PK8} ${1} ${CURRENT_SIGNED_PATH}
-	echo "signed ${1} into ${CURRENT_SIGNED_PATH}"
-	exit 0
+	if [[ -f ${SIGNAPK_JAR} && -f ${PLATFORM_X509_PEM} && -f ${PLATFORM_PK8}  ]]
+	then
+		java -jar ${SIGNAPK_JAR} ${PLATFORM_X509_PEM} ${PLATFORM_PK8} ${1} ${CURRENT_SIGNED_PATH}
+		echo "源文件: ${1}"
+		echo "签名为: ${CURRENT_SIGNED_PATH}"
+		exit 0
+	else
+		echo "签名工具参数错误:${SIGNAPK_JAR} - ${PLATFORM_X509_PEM} - ${PLATFORM_PK8}"
+	fi
 else
 	Use_menu $0
 fi
