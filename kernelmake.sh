@@ -8,8 +8,21 @@ CROSS_COMPILE_PATH=/home/liushengdong/release/mv300h_20181011/prebuilts/gcc/linu
 CONFIG_FILE_LIST=`ls ${cmd_path}/arch/`
 CROSS_COMPILE=arm-eabi-
 THREAD_NUM=8
+MAKE_CLEAN_FLAG=0
 
-while getopts "t:c:f:j:p:h" opts
+function show_help
+{
+cat << EOF
+Usage: `basename $0` [-t cpu type] [-c cross compile] [-f config file] [-p CROSS_COMPILE path] [-h help] [-l make clean]
+EOF
+exit 0
+}
+
+if [ "${current_path}" != "kernel" ];then
+    show_help
+fi
+
+while getopts "t:c:f:j:p:hl" opts
 do
     case $opts in
         t)
@@ -46,10 +59,11 @@ do
         ;;
 
         h)
-cat << EOF
-Usage: `basename $0` [-t cpu type] [-c cross compile] [-f config file] [-p CROSS_COMPILE path] [-h help]
-EOF
-         exit 0
+        show_help
+        ;;
+
+        l)
+        MAKE_CLEAN_FLAG=1
         ;;
 
         j)
@@ -68,24 +82,32 @@ EOF
     esac
 done
 
-echo -e "=========\nCPU_TYPE=${CPU_TYPE} \nCONFIG_FILE=${CONFIG_FILE} \nCROSS_COMPILE=${CROSS_COMPILE} \nTHREAD_NUM=${THREAD_NUM}\nCROSS_COMPILE_PATH=${CROSS_COMPILE_PATH}\n========="
+echo "=============================================="
+echo "CPU_TYPE            = ${CPU_TYPE}"
+echo "CONFIG_FILE         = ${CONFIG_FILE}"
+echo "CROSS_COMPILE       = ${CROSS_COMPILE}"
+echo "THREAD_NUM          = ${THREAD_NUM}"
+echo "CROSS_COMPILE_PATH  = ${CROSS_COMPILE_PATH}"
+echo "MAKE_CLEAN_FLAG     = ${MAKE_CLEAN_FLAG}"
+echo "=============================================="
+
 if [[ "${CPU_TYPE}" == "" || "${CONFIG_FILE}" == "" || "${CROSS_COMPILE}" == "" || "${THREAD_NUM}" == "" || "${CROSS_COMPILE_PATH}" == "" ]];then
     echo "configure error!Please check!"
     exit 1
 fi
 
-
-if [ "${current_path}" == "kernel" ];then
-    export PATH=$PATH:/home/liushengdong/release/mv300h_20181011/prebuilts/gcc/linux-x86/arm/arm-eabi-4.7/bin/
-    pushd ${cmd_path}
-       if [ -f ./Makefile ];then
-            echo "Makefile exist!"
-            make ARCH=${CPU_TYPE} CROSS_COMPILE=${CROSS_COMPILE}
-            make ${CONFIG_FILE} -j${THREAD_NUM}
-       else
-            echo "Makefile isn't exist!"
-       fi
-    popd
-else
-    echo "It isn't kernel path!"
-fi
+export PATH=$PATH:${CROSS_COMPILE_PATH}
+pushd ${cmd_path}
+   if [ -f ./Makefile ];then
+        export ARCH=${CPU_TYPE}
+        export CROSS_COMPILE=${CROSS_COMPILE}
+        if [ $MAKE_CLEAN_FLAG -eq 1 ];then
+            make clean
+            rm -rf .config
+        fi
+        make ${CONFIG_FILE}
+        make -j${THREAD_NUM}
+   else
+        echo "Makefile isn't exist!"
+   fi
+popd
