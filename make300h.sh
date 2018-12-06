@@ -108,7 +108,7 @@ function begin_to_make_program
         elif [ "$1" == "Hisi3798mv100" ]
         then
             lunch_name="Hi3798MV100-eng"
-        elif [ "$1" == "mv300_spc030" ]
+        elif [ "$1" == "mv300_spc030_fj" ]
         then
             lunch_name="Hi3798MV300-eng"
         elif [ "$1" == "mv310_20180410" ]
@@ -120,7 +120,7 @@ function begin_to_make_program
         fi
 
         #300及以上芯片使用宏定义，以及环境变量
-        if [[ "$1" == "mv300h_20181011" || "$1" == "mv300_spc030" || "$1" == "mv310_20180410" ]]
+        if [[ "$1" == "mv300h_20181011" || "$1" == "mv300_spc030_fj" || "$1" == "mv310_20180410" ]]
         then
             ### 300、310和300H 共用变量
             export PRODUCT_TARGET=telecom
