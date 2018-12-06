@@ -114,13 +114,13 @@ function begin_to_make_program
         elif [ "$1" == "mv310_20180410" ]
         then
             lunch_name="Hi3798MV310-eng"
-        elif [ "$1" == "mv300h_20181011" ]
+        elif [[ "$1" == "gd_mv300h_20181011" || "$1" == "fj_mv300h_20181011" ]]
         then
             lunch_name="Hi3798MV300H-eng"
         fi
 
         #300及以上芯片使用宏定义，以及环境变量
-        if [[ "$1" == "mv300h_20181011" || "$1" == "mv300_spc030_fj" || "$1" == "mv310_20180410" ]]
+        if [[ "$1" == "gd_mv300h_20181011" || "$1" == "fj_mv300h_20181011" || "$1" == "mv300_spc030_fj" || "$1" == "mv310_20180410" ]]
         then
             ### 300、310和300H 共用变量
             export PRODUCT_TARGET=telecom
@@ -135,7 +135,7 @@ function begin_to_make_program
             fi
 
             ### 300H 私有变量
-            if [ "$1" == "mv300h_20181011" ]
+            if [[ "$1" == "gd_mv300h_20181011"  || "$1" == "fj_mv300h_20181011" ]]
             then
                 export HISILICON_SECURITY_L2_FLAG=true
                 if [ $? -ne 0 ]
@@ -260,7 +260,7 @@ function begin_to_make_program
         fi
         
         ###编译完成后，需要编译其他文件的时候，使用到的命令
-        if [ "$1" == "mv300h_20181011" ]
+        if [[ "$1" == "gd_mv300h_20181011" || "$1" == "fj_mv300h_20181011" ]]
         then
             source build/swfastbootenv/fastboot-hi3798mv31dms1-M8273-L2.env
             if [ $? -ne 0 ]
@@ -313,7 +313,7 @@ function begin_to_make_program
 
         if [[ "$MAKE_TYPE" == "system" || "$MAKE_TYPE" == "all" ]]
         then
-            if [ "$1" != "mv300h_20181011" ]
+            if [[ "$1" != "gd_mv300h_20181011" && "$1" != "fj_mv300h_20181011" ]]
             then
                 make clean
                 if [ $? -ne 0 ]
