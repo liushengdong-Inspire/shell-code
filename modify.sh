@@ -5,7 +5,7 @@ FILE_ARRAY=$(ls ${PWD})
 echo ${FILE_ARRAY[@]}
 sourceString=$1
 modifyString=$2
-fileExecute=`basename ${PWD}`
+fileExecute=`basename ${0}`
 for file in ${FILE_ARRAY[@]}
 do
     if [[ "${file}" == "${fileExecute}" ]]
