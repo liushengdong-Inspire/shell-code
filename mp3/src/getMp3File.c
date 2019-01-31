@@ -180,5 +180,13 @@ int get_directory_mp3_file_list(char *dir_path,p_MP3_FILE_NAME_LIST *header)
 	{
 		return -1;
 	}
+	return 0;
+}
+
+//对外接口，释放 MP3 文件列表
+int delete_directory_mp3_file_list(p_MP3_FILE_NAME_LIST *header)
+{
+	delete_mp3_file_name(header);
+	return 0;
 }
 
