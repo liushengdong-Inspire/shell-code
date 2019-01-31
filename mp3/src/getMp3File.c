@@ -7,22 +7,22 @@
 #include <string.h>
 #include <stdlib.h>
 //初始化 MP3 文件名称列表
-void init_mp3_file_name_list()
+void init_mp3_file_name_list(p_MP3_FILE_NAME_LIST *header)
 {
-	if( G_MP3_LIST_HEADER == NULL )
+	if( *header == NULL || header == NULL )
 	{
-		G_MP3_LIST_HEADER = (p_MP3_FILE_NAME_LIST)malloc(sizeof(MP3_FILE_NAME_LIST));
-		if( G_MP3_LIST_HEADER == NULL )
+		*header = (p_MP3_FILE_NAME_LIST)malloc(sizeof(MP3_FILE_NAME_LIST));
+		if( *header == NULL )
 		{
-			fprintf(stderr,"Malloc G_MP3_LIST_HEADER Error:%s\n",strerror(errno));
+			fprintf(stderr,"Malloc header Error:%s\n",strerror(errno));
 			return;
 		}
-		G_MP3_LIST_HEADER->next = NULL;
+		(*header)->next = NULL;
 	}
 }
 
 //添加文件名
-int add_mp3_file_name(char *mp3_file_name)
+int add_mp3_file_name(char *mp3_file_name,p_MP3_FILE_NAME_LIST *header)
 {
 	if( mp3_file_name == NULL )
 	{
@@ -30,13 +30,13 @@ int add_mp3_file_name(char *mp3_file_name)
 		return -1;
 	}
 	
-	if( G_MP3_LIST_HEADER == NULL )
+	if( *header == NULL )
 	{
-		printf("G_MP3_LIST_HEADER is Null,Please init first!");
+		printf("header is Null,Please init first!\n");
 		return -1;
 	}
 	
-	p_MP3_FILE_NAME_LIST second = G_MP3_LIST_HEADER;
+	p_MP3_FILE_NAME_LIST second = *header;
 	while( second->next != NULL )
 	{
 		second = second->next;
@@ -56,15 +56,15 @@ int add_mp3_file_name(char *mp3_file_name)
 }
 
 //展示 MP3 文件名
-int show_mp3_file_name()
+int show_mp3_file_name(p_MP3_FILE_NAME_LIST *header)
 {
-	if( G_MP3_LIST_HEADER == NULL || G_MP3_LIST_HEADER->next == NULL )
+	if( *header == NULL || (*header)->next == NULL )
 	{
-		printf("G_MP3_LIST_HEADER is Null in show_mp3_file_name,Please init and add file name first\n");
+		printf("header is Null in show_mp3_file_name,Please init and add file name first\n");
 		return -1;
 	}
 	
-	p_MP3_FILE_NAME_LIST second = G_MP3_LIST_HEADER->next;
+	p_MP3_FILE_NAME_LIST second = (*header)->next;
 	int i = 0;
 	while( second != NULL )
 	{
@@ -77,15 +77,15 @@ int show_mp3_file_name()
 }
 
 //删除 MP3 文件名
-int delete_mp3_file_name()
+int delete_mp3_file_name(p_MP3_FILE_NAME_LIST *header)
 {
-	if( G_MP3_LIST_HEADER == NULL || G_MP3_LIST_HEADER->next == NULL )
+	if( *header == NULL || (*header)->next == NULL )
 	{
-		printf("G_MP3_LIST_HEADER is Null in show_mp3_file_name,Please init and add file name first\n");
+		printf("header is Null in show_mp3_file_name,Please init and add file name first\n");
 		return -1;
 	}
 	
-	p_MP3_FILE_NAME_LIST second = G_MP3_LIST_HEADER->next;
+	p_MP3_FILE_NAME_LIST second = (*header)->next;
 	int i = 0;
 	while( second != NULL )
 	{
@@ -97,14 +97,14 @@ int delete_mp3_file_name()
 		i ++;
 	}
 	printf("success to delete %d file name!\n",i);
-	free(G_MP3_LIST_HEADER);
-	G_MP3_LIST_HEADER = NULL;
+	free(*header);
+	*header = NULL;
 	return 0;
 }
 
 
 //打开 dir_path 目录
-int open_current_dir(char *dir_path)
+int open_current_dir(char *dir_path,p_MP3_FILE_NAME_LIST *header)
 {
 	if( dir_path == NULL )
 	{
@@ -128,7 +128,8 @@ int open_current_dir(char *dir_path)
 		//判断是否是 MP3 文件
 		if(is_MP3_FILE(current_dir->d_name) != -1)
 		{
-			save_mp3_file_name(current_dir->d_name);
+			if(save_mp3_file_name(current_dir->d_name,header) == -1)
+				return -1;
 		}
 		
 	}
@@ -158,15 +159,26 @@ int is_MP3_FILE(char *file_name)
 }
 
 //保存 MP3 文件名
-int save_mp3_file_name(char *file_name)
+int save_mp3_file_name(char *file_name,p_MP3_FILE_NAME_LIST *header)
 {
 	if( file_name == NULL )
 	{
 		printf("save_mp3_file_name file_name = Null\n");
 		return -1;
 	}
-	if(G_MP3_LIST_HEADER == NULL )
-		init_mp3_file_name_list();
-	add_mp3_file_name(file_name);
+	if(*header == NULL || header == NULL )
+		init_mp3_file_name_list(header);
+	add_mp3_file_name(file_name,header);
+}
+
+//对外接口，获取 MP3 文件列表
+int get_directory_mp3_file_list(char *dir_path,p_MP3_FILE_NAME_LIST *header)
+{
+	int ret = -1;
+	ret = open_current_dir(dir_path,header);
+	if( ret == -1 )
+	{
+		return -1;
+	}
 }
 
