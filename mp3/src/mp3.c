@@ -307,6 +307,13 @@ int deal_ID3V2_info( char * mp3_file_name )
 				continue;
 			}
 			//printf("%s : %s\n",FrameID_array_info[info_pos],content);
+			if( !strncmp(FrameID_array_info[info_pos],"附加描述",strlen("附加描述"))){
+				if( !strncmp( content_out,"image/jpeg",strlen("image/jpeg"))) {
+					printf("%s : %s 有图片",FrameID_array_info[info_pos],content_out);
+					printf(" ");
+					continue;
+				}
+			}
 			printf("%s : %s",FrameID_array_info[info_pos],content_out);
 			printf(" ");
 		}
