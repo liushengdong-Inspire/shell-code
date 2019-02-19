@@ -55,8 +55,8 @@ int mp3_type(char *mp3_path)
 			type = 0;
 		}
 	}
-	
 	free(mp3_type);
+	mp3_type = NULL;
 	fclose(mp3_fp);
 	return type;
 }
@@ -119,6 +119,7 @@ int read_back_ID3V2_note_size(char *mp3_path)
 		int len = mp3_id3x_info.Size[0] << 21 | mp3_id3x_info.Size[1] << 14 | mp3_id3x_info.Size[2] << 7 | mp3_id3x_info.Size[3];
 		return len;
 	}
+	fclose(mp3_fp);
 	return 0;
 	
 }
@@ -158,7 +159,7 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,char *content,int *n
 	
 	//获取帧内容，如果内容为空，则不往下处理，直接放回返回当前位置
 	int frame_length = length - 1;
-	if( frame_length < 0 ){
+	if( frame_length <= 0 ){
 		*info_pos = -1;
 		*now_pos = ftell(mp3_fp);
 		fclose(mp3_fp);
@@ -197,17 +198,121 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,char *content,int *n
 		*info_pos = -1;
 		* now_pos = ftell(mp3_fp);
 		free(frame_content);
+		frame_content = NULL;
 		fclose(mp3_fp);
 		return 0;
 	}
 
 	//返回信息，包括了当前文件指针位置，读取到的帧内容信息，还有就是帧内容信息位置
 	* now_pos = ftell(mp3_fp);
-	strncpy(content,frame_content,length);
+	if( length < BUF_SIZE )
+		strncpy(content,frame_content,length);
+	else
+		strncpy(content,frame_content,BUF_SIZE);
 	*info_pos = info_positon;
 	*charset = charset_read;
 	
 	free(frame_content);
+	frame_content = NULL;
 	fclose(mp3_fp);
+	return 0;
+}
+
+//处理 ID3V1 版本相关信息
+int deal_ID3V1_info( char *mp3_file_name )
+{
+	if( mp3_file_name == NULL )
+	{
+		printf("deal_ID3V1_info mp3_file_name = NULL\n");
+		return -1;
+	}
+	
+	p_MP3_ID3V1 id3v1_info = (p_MP3_ID3V1)malloc(sizeof(MP3_ID3V1));
+	if(id3v1_info == NULL )
+	{
+		fprintf(stderr,"Malloc id3v1_info Error:%s\n",strerror(errno));
+		return -1;
+	}
+	
+	p_MP3_ID3V1 id3v1_info_out = (p_MP3_ID3V1)malloc(sizeof(MP3_ID3V1));
+	if(id3v1_info_out == NULL )
+	{
+		fprintf(stderr,"Malloc id3v1_info Error:%s\n",strerror(errno));
+		return -1;
+	}
+	
+	memset(id3v1_info,0,sizeof(MP3_ID3V1));
+	memset(id3v1_info_out,0,sizeof(MP3_ID3V1));
+	
+	read_mp3_ID3V1_info(id3v1_info,mp3_file_name);
+	//printf("TAG : %s\n",id3v1_info->TAG);
+	code_convert("gbk","utf-8",id3v1_info,sizeof(MP3_ID3V1),id3v1_info_out,sizeof(MP3_ID3V1));
+	printf("%s\n",id3v1_info_out->Title);
+	free(id3v1_info);
+	free(id3v1_info_out);
+	id3v1_info = NULL;
+	id3v1_info_out = NULL;
+	return 0;
+}
+
+//处理 ID3V2 版本文件相关信息
+int deal_ID3V2_info( char * mp3_file_name )
+{
+	if( mp3_file_name == NULL )
+	{
+		printf("deal_ID3V1_info mp3_file_name = NULL\n");
+		return -1;
+	}
+	
+	int i = 0;
+	int pos = 0;
+	int info_pos = 0;
+	int frame_len = read_back_ID3V2_note_size(mp3_file_name);
+	//printf("frame_len = %d\n",frame_len);
+	char *content = (char*)malloc(sizeof(char)*BUF_SIZE);
+	if( content == NULL )
+	{
+		fprintf(stderr,"Malloc content 267 Error:%s\n",strerror(errno));
+		return -1;
+	}
+	
+	for( i = 0; pos < frame_len; i++ )
+	{
+		memset(content,0,BUF_SIZE);
+		//printf("before pos = %d\n",pos);
+		char char_set;
+		read_mp3_ID3VX_info_size(mp3_file_name,pos,content,&pos,&info_pos,&char_set);
+		if( info_pos != -1)
+		{
+			char content_out [BUF_SIZE] = {0};
+			if( char_set == 0x00 )
+			{
+				code_convert("ISO_8859-1","utf-8",content,BUF_SIZE,content_out,BUF_SIZE);
+			}
+			else if( char_set == 0x01 )
+			{
+				code_convert("utf-16","utf-8",content,BUF_SIZE,content_out,BUF_SIZE);
+			}
+			else if( char_set == 0x02 )
+			{
+				code_convert("UTF-16BE","utf-8",content,BUF_SIZE,content_out,BUF_SIZE);
+			}
+			else if( char_set == 0x03 )
+			{
+				strncpy(content_out,content,BUF_SIZE);
+			}
+			else
+			{
+				//printf("char_set = %x",char_set);
+				continue;
+			}
+			//printf("%s : %s\n",FrameID_array_info[info_pos],content);
+			printf("%s : %s",FrameID_array_info[info_pos],content_out);
+			printf(" ");
+		}
+	}
+	printf("\n");
+	free(content);
+	content = NULL;
 	return 0;
 }

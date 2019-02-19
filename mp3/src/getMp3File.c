@@ -97,7 +97,6 @@ int delete_mp3_file_name(p_MP3_FILE_NAME_LIST *header)
 		i ++;
 	}
 	printf("success to delete %d file name!\n",i);
-	free(*header);
 	*header = NULL;
 	return 0;
 }

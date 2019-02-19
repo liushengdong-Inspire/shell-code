@@ -28,6 +28,6 @@ int open_current_dir(char *dir_path,p_MP3_FILE_NAME_LIST *header);
 int get_directory_mp3_file_list(char *dir_path,p_MP3_FILE_NAME_LIST *header);
 
 //对外接口，释放 MP3 文件列表
-int delete_directory_mp3_file_list(p_MP3_FILE_NAME_LIST header);
+int delete_directory_mp3_file_list(p_MP3_FILE_NAME_LIST *header);
 
 #endif //__GET_MP3_FILE_H__

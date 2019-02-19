@@ -3,6 +3,7 @@
 
 #define MP3_TYPE_SIZE 3
 #define MP3_ID3V1_INFO_LENTH 128
+#define BUF_SIZE 2048
 
 #include <stdio.h>
 
@@ -78,5 +79,9 @@ int read_back_ID3V2_note_size(char *mp3_path);
 // 解析帧内容信息
 int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,char *content,int *now_pos,int *info_pos,char *charset);
 
-// 
+//处理 ID3V1 版本相关信息
+int deal_ID3V1_info( char *mp3_file_name );
+
+//处理 ID3V2 版本文件相关信息
+int deal_ID3V2_info( char * mp3_file_name );
 #endif

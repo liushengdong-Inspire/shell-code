@@ -9,9 +9,9 @@ OBJS = $(patsubst %.c,%.o,$(SRCS))
 VERSION = 1.0.0.1
 TARGET = find_$(VERSION)
 $(TARGET):$(OBJS)
-	$(CC) $^ -o $@ $(INCLUDE) $(LIB)
+	$(CC) $^ -o $@ $(INCLUDE) $(LIB) -g
 $(OBJS):%.o:%.c
-	$(CC) $< -c -o $@ $(INCLUDE) $(LIB)
+	$(CC) $< -c -o $@ $(INCLUDE) $(LIB) -g
 .PHONY:clean
 clean:
 	rm -rf $(SRC_PATH)/*.o $(TARGET)
