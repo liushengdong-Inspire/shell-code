@@ -4,13 +4,13 @@
 //全日志开启
 #define DEBUG 0
 //错误日志
-#define ERROR_DEBUG 0
+#define ERROR_DEBUG 1
 //info 日志
 #define INFO_DEBUG 0
 //WARN 日志
 #define WARN_DEBUG 0
 //STD 日志
-#define STD_DEBUG 0
+#define STD_DEBUG 1
 //DEBUG 日志
 #define DEBUG_LOG 0
 
