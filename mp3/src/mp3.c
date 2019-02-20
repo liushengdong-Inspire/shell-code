@@ -124,6 +124,99 @@ int read_back_ID3V2_note_size(char *mp3_path)
 	
 }
 
+//保存图片到文件夹中
+void save_picture(char *mp3_path,int pic_pos,char *content_out,int frame_size)
+{
+	if( mp3_path == NULL || pic_pos <= 0 || content_out == NULL )
+	{
+		printf("save_picture Error,param is Null\n");
+		return;
+	}
+	
+	int read_file_begin_flag_pos = 0;
+	int read_file_end_flag_pos = 0;
+	FILE *pic_fp = NULL;
+	FILE *mp3_fp = NULL;
+	unsigned short pis[5];
+	char *save_path = NULL;
+	char *save_file_buf = NULL;
+	char file_type[5] = {0};
+	unsigned short  BMP=0x4D42,JPG=0xD8FF,JPG_END=0xD9FF,PNG[4]={0x5089,0x474E,0x0A0D,0x0A1A},GIF[3]={0x4947,0x3846,0x6139};
+	
+	if( !strncmp( content_out,"image/jpeg",strlen("image/jpeg")) || !strncmp( content_out,"image/jpeg",strlen("image/jpg"))) {
+		strncpy(file_type,".jpg",strlen(".jpg"));
+	}else if(!strncmp( content_out,"image/png",strlen("image/png"))) {
+		strncpy(file_type,".png",strlen(".png"));
+	}else if( !strncmp( content_out,"image/bmp",strlen("image/bmp")) ) {
+		strncpy(file_type,".bmp",strlen(".bmp"));
+	}
+	
+	save_path = (char*)malloc(sizeof(char)*BUF_SIZE);
+	if( save_path == NULL )
+	{
+		fprintf(stderr,"Malloc save_path Error:%s\n",strerror(errno));
+		return;
+	}
+	memset(save_path,0,BUF_SIZE);
+	snprintf(save_path,BUF_SIZE,"%s/%s%s",PIC_SAVE_PATH,mp3_path,file_type);
+	
+	mp3_fp = fopen(mp3_path,"r");
+	pic_fp = fopen(save_path,"w+");
+	if( pic_fp == NULL || mp3_fp == NULL )
+	{
+		fprintf(stderr,"Open File Error:%s\n",strerror(errno));
+		if( mp3_fp != NULL )
+			fclose(mp3_fp);
+		return;
+	}
+	fseek(mp3_fp,pic_pos,SEEK_SET);
+	read_file_begin_flag_pos = ftell(mp3_fp);
+	while(read_file_begin_flag_pos < frame_size) {
+		fseek(mp3_fp,read_file_begin_flag_pos,SEEK_SET);
+		fread(pis,8,1,mp3_fp);
+		if(pis[0]==BMP) {
+			break;
+		}else if(pis[0]==JPG) {
+			break;
+		}else if(PNG[0]==pis[0]&&PNG[1]==pis[1]&&PNG[2]==pis[2]&&PNG[3]==pis[3]) {
+			break;
+		}else if(GIF[0]==pis[0]&&GIF[1]==pis[1]&&GIF[2]==pis[2]) {
+			break;
+		}
+		read_file_begin_flag_pos ++;
+	}
+	
+	read_file_end_flag_pos = ftell(mp3_fp);
+	while(read_file_end_flag_pos < frame_size) {
+		fseek(mp3_fp,read_file_end_flag_pos,SEEK_SET);
+		fread(pis,8,1,mp3_fp);
+		if(pis[0] == JPG_END)
+			break;
+		
+		read_file_end_flag_pos ++;
+	}
+	
+	int pic_file_size = read_file_end_flag_pos - read_file_begin_flag_pos;
+	fseek(mp3_fp,read_file_begin_flag_pos,SEEK_SET);
+	save_file_buf = (char*)malloc(sizeof(char)*pic_file_size);
+	if( save_file_buf == NULL )
+	{
+		fprintf(stderr,"Malloc save_file_buf Error:%s\n",strerror(errno));
+		free(save_path);
+		fclose(mp3_fp);
+		fclose(pic_fp);
+		return;
+	}
+	
+	memset(save_file_buf,0,pic_file_size);
+	fread(save_file_buf,pic_file_size,1,mp3_fp);
+	fwrite(save_file_buf,pic_file_size,1,pic_fp);
+	
+	free(save_path);
+	fclose(mp3_fp);
+	fclose(pic_fp);
+}
+
 // 解析帧内容信息
 int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos)
 {
@@ -236,6 +329,7 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos)
 	if( !strncmp(FrameID_array_info[info_positon],"附加描述",strlen("附加描述")) && !strncmp( content_out,"image/",strlen("image/"))){
 		printf("%s : %s 有图片",FrameID_array_info[info_positon],content_out);
 		printf(" ");
+		save_picture(mp3_path,file_pos_read_charset,content_out,*now_pos);
 	} else {
 		printf("%s : %s",FrameID_array_info[info_positon],content_out);
 		printf(" ");
