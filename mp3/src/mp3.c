@@ -183,6 +183,9 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos)
 		}
 	}
 	
+	//此时文件指针位置，为后面读取图片信息做准备
+	int file_pos_read_charset = ftell(mp3_fp);
+	
 	char *frame_content = (char*)malloc(sizeof(char)*frame_length);
 	char *content_out = (char*)malloc(sizeof(char)*frame_length);
 	if( frame_content == NULL || content_out == NULL )
@@ -196,16 +199,16 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos)
 		return -1;
 	}
 	fread(frame_content,(length-1),1,mp3_fp);
+	*now_pos = ftell(mp3_fp);
+	fclose(mp3_fp);
 	
 	//未读取到任何信息
 	if(info_positon == -1 )
 	{
-		* now_pos = ftell(mp3_fp);
 		free(frame_content);
 		frame_content = NULL;
 		free(content_out);
 		content_out = NULL;
-		fclose(mp3_fp);
 		return 0;
 	}
 	
@@ -230,30 +233,18 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos)
 		//printf("charset_read = %x",charset_read);
 	}
 	//printf("%s : %s\n",FrameID_array_info[info_positon],content);
-	if( !strncmp(FrameID_array_info[info_positon],"附加描述",strlen("附加描述"))){
-		if( !strncmp( content_out,"image/jpeg",strlen("image/jpeg")) || !strncmp( content_out,"image/jpeg",strlen("image/jpg"))) {
-			printf("%s : %s 有图片:jpeg",FrameID_array_info[info_positon],content_out);
-			printf(" ");
-		}else if( !strncmp( content_out,"image/png",strlen("image/png")) ) {
-			printf("%s : %s 有图片:png",FrameID_array_info[info_positon],content_out);
-			printf(" ");
-		}else if( !strncmp( content_out,"image/bmp",strlen("image/bmp")) ) {
-			printf("%s : %s 有图片:bmp",FrameID_array_info[info_positon],content_out);
-			printf(" ");
-		}
+	if( !strncmp(FrameID_array_info[info_positon],"附加描述",strlen("附加描述")) && !strncmp( content_out,"image/",strlen("image/"))){
+		printf("%s : %s 有图片",FrameID_array_info[info_positon],content_out);
+		printf(" ");
 	} else {
 		printf("%s : %s",FrameID_array_info[info_positon],content_out);
 		printf(" ");
 	}
-
-	//返回信息，包括了当前文件指针位置，读取到的帧内容信息，还有就是帧内容信息位置
-	* now_pos = ftell(mp3_fp);
 	
 	free(frame_content);
 	frame_content = NULL;
 	free(content_out);
 	content_out = NULL;
-	fclose(mp3_fp);
 	return 0;
 }
 
