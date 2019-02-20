@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "LSD_LOG.h"
 
 
 
@@ -11,7 +12,7 @@ int mp3_type(char *mp3_path)
 {
 	if( mp3_path == NULL )
 	{
-		printf("mp3_path = NULL !\n");
+		LSD_ERROR("mp3_path = NULL !\n");
 		return -1;
 	}
 	
@@ -19,7 +20,7 @@ int mp3_type(char *mp3_path)
 	FILE *mp3_fp = fopen(mp3_path,"r");
 	if( mp3_fp == NULL )
 	{
-		fprintf(stderr,"Open %s Error:%s\n",mp3_path,strerror(errno));
+		LSD_STDERROR("Open %s Error:%s\n",mp3_path,strerror(errno));
 		return -1;
 	}
 	
@@ -27,7 +28,7 @@ int mp3_type(char *mp3_path)
 	char *mp3_type = (char *)malloc(sizeof(char)*MP3_TYPE_SIZE);
 	if( mp3_type == NULL )
 	{
-		fprintf(stderr,"Malloc mp3_type failed:%s\n",strerror(errno));
+		LSD_STDERROR("Malloc mp3_type failed:%s\n",strerror(errno));
 		fclose(mp3_fp);
 		return -1;
 	}
@@ -66,14 +67,14 @@ int read_mp3_ID3V1_info(p_MP3_ID3V1 id3v1_info,char *mp3_path)
 {
 	if( id3v1_info == NULL || mp3_path == NULL )
 	{
-		printf("id3v1_info or mp3_path == NULL,Please check!\n");
+		LSD_ERROR("id3v1_info or mp3_path == NULL,Please check!\n");
 		return -1;
 	}
 	
 	FILE *mp3_fp = fopen(mp3_path,"r");
 	if( mp3_fp == NULL )
 	{
-		fprintf(stderr,"Open %s Error:%s\n",mp3_path,strerror(errno));
+		LSD_STDERROR("Open %s Error:%s\n",mp3_path,strerror(errno));
 		return -1;
 	}
 	
@@ -88,7 +89,7 @@ int read_mp3_ID3VX_HEAD_info(FILE *fp,p_MP3_ID3X_HEADER mp3_id3x_info)
 {
 	if( fp == NULL || mp3_id3x_info == NULL )
 	{
-		printf("read_mp3_ID3VX_HEAD_info fp or mp3_id3x_info == NULL \n");
+		LSD_ERROR("read_mp3_ID3VX_HEAD_info fp or mp3_id3x_info == NULL \n");
 		return -1;
 	}
 	
@@ -102,14 +103,14 @@ int read_back_ID3V2_note_size(char *mp3_path)
 {
 	if( mp3_path == NULL )
 	{
-		printf("Mp3 path == NULL\n");
+		LSD_ERROR("Mp3 path == NULL\n");
 		return -1;
 	}
 	
 	FILE *mp3_fp = fopen(mp3_path,"r");
 	if( mp3_fp == NULL )
 	{
-		fprintf(stderr,"Open %s Error:%s\n",mp3_path,strerror(errno));
+		LSD_STDERROR("Open %s Error:%s\n",mp3_path,strerror(errno));
 		return -1;
 	}
 	
@@ -129,7 +130,7 @@ void save_picture(char *mp3_path,int pic_pos,char *content_out,int frame_size)
 {
 	if( mp3_path == NULL || pic_pos <= 0 || content_out == NULL )
 	{
-		printf("save_picture Error,param is Null\n");
+		LSD_ERROR("save_picture Error,param is Null\n");
 		return;
 	}
 	
@@ -154,7 +155,7 @@ void save_picture(char *mp3_path,int pic_pos,char *content_out,int frame_size)
 	save_path = (char*)malloc(sizeof(char)*BUF_SIZE);
 	if( save_path == NULL )
 	{
-		fprintf(stderr,"Malloc save_path Error:%s\n",strerror(errno));
+		LSD_STDERROR("Malloc save_path Error:%s\n",strerror(errno));
 		return;
 	}
 	memset(save_path,0,BUF_SIZE);
@@ -164,7 +165,7 @@ void save_picture(char *mp3_path,int pic_pos,char *content_out,int frame_size)
 	pic_fp = fopen(save_path,"w+");
 	if( pic_fp == NULL || mp3_fp == NULL )
 	{
-		fprintf(stderr,"Open File Error:%s\n",strerror(errno));
+		LSD_STDERROR("Open File Error:%s\n",strerror(errno));
 		if( mp3_fp != NULL )
 			fclose(mp3_fp);
 		return;
@@ -201,7 +202,7 @@ void save_picture(char *mp3_path,int pic_pos,char *content_out,int frame_size)
 	save_file_buf = (char*)malloc(sizeof(char)*pic_file_size);
 	if( save_file_buf == NULL )
 	{
-		fprintf(stderr,"Malloc save_file_buf Error:%s\n",strerror(errno));
+		LSD_STDERROR("Malloc save_file_buf Error:%s\n",strerror(errno));
 		free(save_path);
 		fclose(mp3_fp);
 		fclose(pic_fp);
@@ -222,14 +223,14 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos)
 {
 	if( mp3_path == NULL )
 	{
-		printf("read_mp3_ID3VX_info mp3_path == NULL \n");
+		LSD_ERROR("read_mp3_ID3VX_info mp3_path == NULL \n");
 		return -1;
 	}
 	
 	FILE *mp3_fp = fopen(mp3_path,"r");
 	if( mp3_fp == NULL )
 	{
-		fprintf(stderr,"Open %s Error:%s\n",mp3_path,strerror(errno));
+		LSD_STDERROR("Open %s Error:%s\n",mp3_path,strerror(errno));
 		return -1;
 	}
 	
@@ -249,7 +250,7 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos)
 	
 	//获取帧内容大小
 	int length = mp3_id3x_info.Size[0] << 24 | mp3_id3x_info.Size[1] << 16 | mp3_id3x_info.Size[2] << 8 | mp3_id3x_info.Size[3];
-	//printf("length = %d\n",length);
+	LSD_DEBUG("length = %d\n",length);
 	
 	//获取帧内容，如果内容为空，则不往下处理，直接放回返回当前位置
 	int frame_length = length - 1;
@@ -270,7 +271,7 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos)
 	for(i = 0; i < 72;i ++ ) {
 		if(!strncmp(mp3_id3x_info.FrameID,FrameID_array[i],4))
 		{
-			//printf(" %d %s : %s\n",i,mp3_id3x_info.FrameID,FrameID_array[i]);
+			LSD_DEBUG(" %d %s : %s\n",i,mp3_id3x_info.FrameID,FrameID_array[i]);
 			info_positon = i;
 			break;
 		}
@@ -283,7 +284,7 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos)
 	char *content_out = (char*)malloc(sizeof(char)*frame_length);
 	if( frame_content == NULL || content_out == NULL )
 	{
-		fprintf(stderr,"Malloc frame_content == NULL or content = NULL Error:%s\n",strerror(errno));
+		LSD_STDERROR("Malloc frame_content == NULL or content = NULL Error:%s\n",strerror(errno));
 		if( frame_content != NULL) {
 			free(frame_content);
 			frame_content = NULL;
@@ -323,16 +324,14 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos)
 	}
 	else
 	{
-		//printf("charset_read = %x",charset_read);
+		LSD_DEBUG("charset_read = %x\n",charset_read);
 	}
-	//printf("%s : %s\n",FrameID_array_info[info_positon],content);
+	LSD_DEBUG("%s : %s\n",FrameID_array_info[info_positon],content_out);
 	if( !strncmp(FrameID_array_info[info_positon],"附加描述",strlen("附加描述")) && !strncmp( content_out,"image/",strlen("image/"))){
-		printf("%s : %s 有图片",FrameID_array_info[info_positon],content_out);
-		printf(" ");
+		LSD_INFO("%s : %s\n",FrameID_array_info[info_positon],content_out);
 		save_picture(mp3_path,file_pos_read_charset,content_out,*now_pos);
 	} else {
-		printf("%s : %s",FrameID_array_info[info_positon],content_out);
-		printf(" ");
+		LSD_INFO("%s : %s\n",FrameID_array_info[info_positon],content_out);
 	}
 	
 	free(frame_content);
@@ -347,21 +346,21 @@ int deal_ID3V1_info( char *mp3_file_name )
 {
 	if( mp3_file_name == NULL )
 	{
-		printf("deal_ID3V1_info mp3_file_name = NULL\n");
+		LSD_ERROR("deal_ID3V1_info mp3_file_name = NULL\n");
 		return -1;
 	}
 	
 	p_MP3_ID3V1 id3v1_info = (p_MP3_ID3V1)malloc(sizeof(MP3_ID3V1));
 	if(id3v1_info == NULL )
 	{
-		fprintf(stderr,"Malloc id3v1_info Error:%s\n",strerror(errno));
+		LSD_STDERROR("Malloc id3v1_info Error:%s\n",strerror(errno));
 		return -1;
 	}
 	
 	p_MP3_ID3V1 id3v1_info_out = (p_MP3_ID3V1)malloc(sizeof(MP3_ID3V1));
 	if(id3v1_info_out == NULL )
 	{
-		fprintf(stderr,"Malloc id3v1_info Error:%s\n",strerror(errno));
+		LSD_STDERROR("Malloc id3v1_info Error:%s\n",strerror(errno));
 		return -1;
 	}
 	
@@ -369,9 +368,9 @@ int deal_ID3V1_info( char *mp3_file_name )
 	memset(id3v1_info_out,0,sizeof(MP3_ID3V1));
 	
 	read_mp3_ID3V1_info(id3v1_info,mp3_file_name);
-	//printf("TAG : %s\n",id3v1_info->TAG);
+	LSD_DEBUG("TAG : %s\n",id3v1_info->TAG);
 	code_convert("gbk","utf-8",id3v1_info,sizeof(MP3_ID3V1),id3v1_info_out,sizeof(MP3_ID3V1));
-	printf("%s\n",id3v1_info_out->Title);
+	LSD_DEBUG("%s\n",id3v1_info_out->Title);
 	free(id3v1_info);
 	free(id3v1_info_out);
 	id3v1_info = NULL;
@@ -384,20 +383,20 @@ int deal_ID3V2_info( char * mp3_file_name )
 {
 	if( mp3_file_name == NULL )
 	{
-		printf("deal_ID3V1_info mp3_file_name = NULL\n");
+		LSD_ERROR("deal_ID3V1_info mp3_file_name = NULL\n");
 		return -1;
 	}
 	
 	int i = 0;
 	int pos = 0;
 	int frame_len = read_back_ID3V2_note_size(mp3_file_name);
-	//printf("frame_len = %d\n",frame_len);
+	LSD_DEBUG("frame_len = %d\n",frame_len);
 	
 	for( i = 0; pos < frame_len; i++ )
 	{
 		//读取并且处理数据，将每次的位置返回
 		read_mp3_ID3VX_info_size(mp3_file_name,pos,&pos);
 	}
-	printf("\n");
+	LSD_INFO("\n");
 	return 0;
 }

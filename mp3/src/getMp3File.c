@@ -6,6 +6,8 @@
 #include <dirent.h>
 #include <string.h>
 #include <stdlib.h>
+#include "LSD_LOG.h"
+
 //初始化 MP3 文件名称列表
 void init_mp3_file_name_list(p_MP3_FILE_NAME_LIST *header)
 {
@@ -14,7 +16,7 @@ void init_mp3_file_name_list(p_MP3_FILE_NAME_LIST *header)
 		*header = (p_MP3_FILE_NAME_LIST)malloc(sizeof(MP3_FILE_NAME_LIST));
 		if( *header == NULL )
 		{
-			fprintf(stderr,"Malloc header Error:%s\n",strerror(errno));
+			LSD_STDERROR("Malloc header Error:%s\n",strerror(errno));
 			return;
 		}
 		(*header)->next = NULL;
@@ -26,13 +28,13 @@ int add_mp3_file_name(char *mp3_file_name,p_MP3_FILE_NAME_LIST *header)
 {
 	if( mp3_file_name == NULL )
 	{
-		printf("add_mp3_file_name mp3_file_name = Null\n");
+		LSD_ERROR("add_mp3_file_name mp3_file_name = Null\n");
 		return -1;
 	}
 	
 	if( *header == NULL )
 	{
-		printf("header is Null,Please init first!\n");
+		LSD_ERROR("header is Null,Please init first!\n");
 		return -1;
 	}
 	
@@ -45,7 +47,7 @@ int add_mp3_file_name(char *mp3_file_name,p_MP3_FILE_NAME_LIST *header)
 	p_MP3_FILE_NAME_LIST third = (p_MP3_FILE_NAME_LIST)malloc(sizeof(MP3_FILE_NAME_LIST));
 	if( third == NULL )
 	{
-		fprintf(stderr,"Malloc to add file name Error:%s\n",strerror(errno));
+		LSD_STDERROR("Malloc to add file name Error:%s\n",strerror(errno));
 		return -1;
 	}
 	
@@ -60,7 +62,7 @@ int show_mp3_file_name(p_MP3_FILE_NAME_LIST *header)
 {
 	if( *header == NULL || (*header)->next == NULL )
 	{
-		printf("header is Null in show_mp3_file_name,Please init and add file name first\n");
+		LSD_ERROR("header is Null in show_mp3_file_name,Please init and add file name first\n");
 		return -1;
 	}
 	
@@ -68,11 +70,11 @@ int show_mp3_file_name(p_MP3_FILE_NAME_LIST *header)
 	int i = 0;
 	while( second != NULL )
 	{
-		printf("%s\n",second->mp3_name);
+		LSD_DEBUG("%s\n",second->mp3_name);
 		second = second->next;
 		i ++;
 	}
-	printf("Toatal has %d file\n",i);
+	LSD_DEBUG("Toatal has %d file\n",i);
 	return 0;
 }
 
@@ -81,7 +83,7 @@ int delete_mp3_file_name(p_MP3_FILE_NAME_LIST *header)
 {
 	if( *header == NULL || (*header)->next == NULL )
 	{
-		printf("header is Null in show_mp3_file_name,Please init and add file name first\n");
+		LSD_ERROR("header is Null in show_mp3_file_name,Please init and add file name first\n");
 		return -1;
 	}
 	
@@ -96,7 +98,7 @@ int delete_mp3_file_name(p_MP3_FILE_NAME_LIST *header)
 		second = third;
 		i ++;
 	}
-	printf("success to delete %d file name!\n",i);
+	LSD_DEBUG("success to delete %d file name!\n",i);
 	*header = NULL;
 	return 0;
 }
@@ -107,14 +109,14 @@ int open_current_dir(char *dir_path,p_MP3_FILE_NAME_LIST *header)
 {
 	if( dir_path == NULL )
 	{
-		printf("Input DIR path Null!\n");
+		LSD_ERROR("Input DIR path Null!\n");
 		return -1;
 	}
 	
 	DIR *mp3_DIR = opendir(dir_path);
 	if( mp3_DIR == NULL )
 	{
-		fprintf(stderr,"Open DIR %s Error:%s\n",dir_path,strerror(errno));
+		LSD_STDERROR("Open DIR %s Error:%s\n",dir_path,strerror(errno));
 		return -1;
 	}
 	
@@ -141,7 +143,7 @@ int is_MP3_FILE(char *file_name)
 {
 	if( file_name == NULL )
 	{
-		printf("is_MP3_FILE file_name = Null\n");
+		LSD_ERROR("is_MP3_FILE file_name = Null\n");
 		return -1;
 	}
 	int i = 0;
@@ -162,7 +164,7 @@ int save_mp3_file_name(char *file_name,p_MP3_FILE_NAME_LIST *header)
 {
 	if( file_name == NULL )
 	{
-		printf("save_mp3_file_name file_name = Null\n");
+		LSD_ERROR("save_mp3_file_name file_name = Null\n");
 		return -1;
 	}
 	if(*header == NULL || header == NULL )
