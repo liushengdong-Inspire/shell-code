@@ -196,7 +196,7 @@ void save_picture(char *mp3_path,int pic_pos,char *content_out,int frame_size)
 		read_file_end_flag_pos ++;
 	}
 	
-	int pic_file_size = read_file_end_flag_pos - read_file_begin_flag_pos;
+	int pic_file_size = read_file_end_flag_pos - read_file_begin_flag_pos+2;
 	fseek(mp3_fp,read_file_begin_flag_pos,SEEK_SET);
 	save_file_buf = (char*)malloc(sizeof(char)*pic_file_size);
 	if( save_file_buf == NULL )
