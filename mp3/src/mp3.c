@@ -125,7 +125,7 @@ int read_back_ID3V2_note_size(char *mp3_path)
 }
 
 // 解析帧内容信息
-int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,char *content,int *now_pos,int *info_pos,char *charset)
+int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos)
 {
 	if( mp3_path == NULL )
 	{
@@ -142,6 +142,7 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,char *content,int *n
 	
 	fseek(mp3_fp,current_pos,SEEK_SET);
 	
+	//将文件指针略过头部，准备开始读取帧信息
 	if( current_pos == 0 )
 	{
 		MP3_ID3X_HEADER mp3_id3x_header;
@@ -160,16 +161,7 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,char *content,int *n
 	//获取帧内容，如果内容为空，则不往下处理，直接放回返回当前位置
 	int frame_length = length - 1;
 	if( frame_length <= 0 ){
-		*info_pos = -1;
 		*now_pos = ftell(mp3_fp);
-		fclose(mp3_fp);
-		return -1;
-	}
-	
-	char *frame_content = (char*)malloc(sizeof(char)*frame_length);
-	if( frame_content == NULL )
-	{
-		fprintf(stderr,"Malloc frame_content == NULL Error:%s\n",strerror(errno));
 		fclose(mp3_fp);
 		return -1;
 	}
@@ -178,11 +170,10 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,char *content,int *n
 	char charset_read;
 	fread(&charset_read,sizeof(char),1,mp3_fp);
 	
-	
-	fread(frame_content,(length-1),1,mp3_fp);
 	//读取帧内容信息，主要获取作者名，歌曲名，还有就是背景图
 	int i = 0;
 	int info_positon = -1;
+	int pic_frameflag = 0;
 	for(i = 0; i < 72;i ++ ) {
 		if(!strncmp(mp3_id3x_info.FrameID,FrameID_array[i],4))
 		{
@@ -192,28 +183,76 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,char *content,int *n
 		}
 	}
 	
+	char *frame_content = (char*)malloc(sizeof(char)*frame_length);
+	char *content_out = (char*)malloc(sizeof(char)*frame_length);
+	if( frame_content == NULL || content_out == NULL )
+	{
+		fprintf(stderr,"Malloc frame_content == NULL or content = NULL Error:%s\n",strerror(errno));
+		if( frame_content != NULL) {
+			free(frame_content);
+			frame_content = NULL;
+		}
+		fclose(mp3_fp);
+		return -1;
+	}
+	fread(frame_content,(length-1),1,mp3_fp);
+	
+	//未读取到任何信息
 	if(info_positon == -1 )
 	{
-		//返回信息中，info_pos 为负数，代表是没有读取到信息
-		*info_pos = -1;
 		* now_pos = ftell(mp3_fp);
 		free(frame_content);
 		frame_content = NULL;
+		free(content_out);
+		content_out = NULL;
 		fclose(mp3_fp);
 		return 0;
+	}
+	
+	if( charset_read == 0x00 )
+	{
+		code_convert("ISO_8859-1","utf-8",frame_content,frame_length,content_out,frame_length);
+	}
+	else if( charset_read == 0x01 )
+	{
+		code_convert("utf-16","utf-8",frame_content,frame_length,content_out,frame_length);
+	}
+	else if( charset_read == 0x02 )
+	{
+		code_convert("UTF-16BE","utf-8",frame_content,frame_length,content_out,frame_length);
+	}
+	else if( charset_read == 0x03 )
+	{
+		strncpy(content_out,frame_content,frame_length);
+	}
+	else
+	{
+		//printf("charset_read = %x",charset_read);
+	}
+	//printf("%s : %s\n",FrameID_array_info[info_positon],content);
+	if( !strncmp(FrameID_array_info[info_positon],"附加描述",strlen("附加描述"))){
+		if( !strncmp( content_out,"image/jpeg",strlen("image/jpeg")) || !strncmp( content_out,"image/jpeg",strlen("image/jpg"))) {
+			printf("%s : %s 有图片:jpeg",FrameID_array_info[info_positon],content_out);
+			printf(" ");
+		}else if( !strncmp( content_out,"image/png",strlen("image/png")) ) {
+			printf("%s : %s 有图片:png",FrameID_array_info[info_positon],content_out);
+			printf(" ");
+		}else if( !strncmp( content_out,"image/bmp",strlen("image/bmp")) ) {
+			printf("%s : %s 有图片:bmp",FrameID_array_info[info_positon],content_out);
+			printf(" ");
+		}
+	} else {
+		printf("%s : %s",FrameID_array_info[info_positon],content_out);
+		printf(" ");
 	}
 
 	//返回信息，包括了当前文件指针位置，读取到的帧内容信息，还有就是帧内容信息位置
 	* now_pos = ftell(mp3_fp);
-	if( length < BUF_SIZE )
-		strncpy(content,frame_content,length);
-	else
-		strncpy(content,frame_content,BUF_SIZE);
-	*info_pos = info_positon;
-	*charset = charset_read;
 	
 	free(frame_content);
 	frame_content = NULL;
+	free(content_out);
+	content_out = NULL;
 	fclose(mp3_fp);
 	return 0;
 }
@@ -266,60 +305,14 @@ int deal_ID3V2_info( char * mp3_file_name )
 	
 	int i = 0;
 	int pos = 0;
-	int info_pos = 0;
 	int frame_len = read_back_ID3V2_note_size(mp3_file_name);
 	//printf("frame_len = %d\n",frame_len);
-	char *content = (char*)malloc(sizeof(char)*BUF_SIZE);
-	if( content == NULL )
-	{
-		fprintf(stderr,"Malloc content 267 Error:%s\n",strerror(errno));
-		return -1;
-	}
 	
 	for( i = 0; pos < frame_len; i++ )
 	{
-		memset(content,0,BUF_SIZE);
-		//printf("before pos = %d\n",pos);
-		char char_set;
-		read_mp3_ID3VX_info_size(mp3_file_name,pos,content,&pos,&info_pos,&char_set);
-		if( info_pos != -1)
-		{
-			char content_out [BUF_SIZE] = {0};
-			if( char_set == 0x00 )
-			{
-				code_convert("ISO_8859-1","utf-8",content,BUF_SIZE,content_out,BUF_SIZE);
-			}
-			else if( char_set == 0x01 )
-			{
-				code_convert("utf-16","utf-8",content,BUF_SIZE,content_out,BUF_SIZE);
-			}
-			else if( char_set == 0x02 )
-			{
-				code_convert("UTF-16BE","utf-8",content,BUF_SIZE,content_out,BUF_SIZE);
-			}
-			else if( char_set == 0x03 )
-			{
-				strncpy(content_out,content,BUF_SIZE);
-			}
-			else
-			{
-				//printf("char_set = %x",char_set);
-				continue;
-			}
-			//printf("%s : %s\n",FrameID_array_info[info_pos],content);
-			if( !strncmp(FrameID_array_info[info_pos],"附加描述",strlen("附加描述"))){
-				if( !strncmp( content_out,"image/jpeg",strlen("image/jpeg"))) {
-					printf("%s : %s 有图片",FrameID_array_info[info_pos],content_out);
-					printf(" ");
-					continue;
-				}
-			}
-			printf("%s : %s",FrameID_array_info[info_pos],content_out);
-			printf(" ");
-		}
+		//读取并且处理数据，将每次的位置返回
+		read_mp3_ID3VX_info_size(mp3_file_name,pos,&pos);
 	}
 	printf("\n");
-	free(content);
-	content = NULL;
 	return 0;
 }
