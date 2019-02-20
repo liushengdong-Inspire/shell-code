@@ -15,6 +15,7 @@ int main(int argc,char *arv[])
 	if(header == NULL )
 	{
 		printf("head is NULL!Please check!\n");
+		return -1;
 	}
 	//show_mp3_file_name(&header);
 	
