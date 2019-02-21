@@ -65,7 +65,7 @@ int save_json_content(cJSON *json)
 		return -1;
 	}
 	
-	LSD_ERROR("%s\n",cJSON_Print(json));
+	LSD_DEBUG("%s\n",cJSON_Print(json));
 	
 	FILE *json_fp = fopen(JSON_SAVE_PATH,"w+");
 	if( json_fp == NULL )
