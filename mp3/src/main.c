@@ -7,9 +7,11 @@
 #include "getMp3File.h"
 #include <stdlib.h>
 #include "LSD_LOG.h"
+#include "save_json.h"
 
 int main(int argc,char *arv[])
 {
+	
 	p_MP3_FILE_NAME_LIST header = NULL;
 	if(get_directory_mp3_file_list("./",&header) == -1)
 		return -1;
@@ -43,6 +45,7 @@ int main(int argc,char *arv[])
 		i ++;
 	}
 	LSD_INFO("Toast deal with %d files\n",i);
+	deal_with_JSON();
 	delete_directory_mp3_file_list(&header);
 	return 0;
 }

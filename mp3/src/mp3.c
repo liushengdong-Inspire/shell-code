@@ -4,8 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "LSD_LOG.h"
-
-
+#include "save_json.h"
 
 //判断 MP3 文件是 ID3V1 还是 ID3V2
 int mp3_type(char *mp3_path)
@@ -126,9 +125,9 @@ int read_back_ID3V2_note_size(char *mp3_path)
 }
 
 //保存图片到文件夹中
-void save_picture(char *mp3_path,int pic_pos,char *content_out,int frame_size)
+void save_picture(char *mp3_path,int pic_pos,char *content_out,int frame_size,char **save_path_out)
 {
-	if( mp3_path == NULL || pic_pos <= 0 || content_out == NULL )
+	if( mp3_path == NULL || pic_pos <= 0 || content_out == NULL || save_path_out == NULL)
 	{
 		LSD_ERROR("save_picture Error,param is Null\n");
 		return;
@@ -212,7 +211,7 @@ void save_picture(char *mp3_path,int pic_pos,char *content_out,int frame_size)
 	memset(save_file_buf,0,pic_file_size);
 	fread(save_file_buf,pic_file_size,1,mp3_fp);
 	fwrite(save_file_buf,pic_file_size,1,pic_fp);
-	
+	strncpy(*save_path_out,save_path,BUF_SIZE);
 	free(save_path);
 	fclose(mp3_fp);
 	fclose(pic_fp);
@@ -329,7 +328,19 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos)
 	LSD_DEBUG("%s : %s\n",FrameID_array_info[info_positon],content_out);
 	if( !strncmp(FrameID_array_info[info_positon],"附加描述",strlen("附加描述")) && !strncmp( content_out,"image/",strlen("image/"))){
 		LSD_INFO("%s : %s\n",FrameID_array_info[info_positon],content_out);
-		save_picture(mp3_path,file_pos_read_charset,content_out,*now_pos);
+		char *save_path_out = (char*)malloc(sizeof(char)*BUF_SIZE);
+		if( save_path_out == NULL )
+		{
+			LSD_STDERROR("Malloc save_path_out Error:%s\n",strerror(errno));
+			free(frame_content);
+			frame_content = NULL;
+			free(content_out);
+			content_out = NULL;
+			return -1;
+		}
+		memset(save_path_out,0,BUF_SIZE);
+		save_picture(mp3_path,file_pos_read_charset,content_out,*now_pos,&save_path_out);
+		free(save_path_out);
 	} else {
 		LSD_INFO("%s : %s\n",FrameID_array_info[info_positon],content_out);
 	}
@@ -370,7 +381,12 @@ int deal_ID3V1_info( char *mp3_file_name )
 	read_mp3_ID3V1_info(id3v1_info,mp3_file_name);
 	LSD_DEBUG("TAG : %s\n",id3v1_info->TAG);
 	code_convert("gbk","utf-8",id3v1_info,sizeof(MP3_ID3V1),id3v1_info_out,sizeof(MP3_ID3V1));
-	LSD_DEBUG("%s\n",id3v1_info_out->Title);
+	LSD_DEBUG("Title:%s  Artist:%s\n",id3v1_info_out->Title,id3v1_info_out->Artist);
+	if( g_json == NULL || g_array == NULL )
+	{
+		init_jscon_framework(&g_json,&g_array);
+	}
+	add_jscon_content(g_array,g_obj,mp3_file_name,id3v1_info_out->Title,id3v1_info_out->Artist,NULL);
 	free(id3v1_info);
 	free(id3v1_info_out);
 	id3v1_info = NULL;
@@ -399,4 +415,11 @@ int deal_ID3V2_info( char * mp3_file_name )
 	}
 	LSD_INFO("\n");
 	return 0;
+}
+
+//处理 JSON 数据
+int deal_with_JSON()
+{
+	save_json_content(g_json);
+	delete_json(g_json);
 }

@@ -88,4 +88,7 @@ int deal_ID3V2_info( char * mp3_file_name );
 
 //获取帧内容大小
 int get_frame_content_size(char *mp3_path,int current_pos);
+
+//处理 JSON 数据
+int deal_with_JSON();
 #endif
