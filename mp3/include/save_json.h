@@ -15,6 +15,9 @@ int init_jscon_framework(cJSON **json,cJSON **array);
 //添加JSON信息内容
 int add_jscon_content(cJSON *array,cJSON *obj,char *mp3_name,char *title,char *singer,char *pic_path);
 
+//插入JSON信息内容
+int insert_jscon_content(cJSON *json,cJSON *array,cJSON*obj,char *mp3_name,char *item,char *content);
+
 //保存 JSON 信息内容
 int save_json_content(cJSON *json);
 

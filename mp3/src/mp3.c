@@ -340,9 +340,29 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos)
 		}
 		memset(save_path_out,0,BUF_SIZE);
 		save_picture(mp3_path,file_pos_read_charset,content_out,*now_pos,&save_path_out);
+		if( g_json == NULL || g_array == NULL )
+		{
+			init_jscon_framework(&g_json,&g_array);
+		}
+		insert_jscon_content(g_json,g_array,g_obj,mp3_path,"picpath",save_path_out);
 		free(save_path_out);
 	} else {
 		LSD_INFO("%s : %s\n",FrameID_array_info[info_positon],content_out);
+		if( g_json == NULL || g_array == NULL )
+		{
+			init_jscon_framework(&g_json,&g_array);
+		}
+		
+		if( !strncmp(FrameID_array[info_positon],"标题",strlen("标题")))
+		{
+			insert_jscon_content(g_json,g_array,g_obj,mp3_path,"title",content_out);
+			insert_jscon_content(g_json,g_array,g_obj,mp3_path,"picpath","");
+		}
+		else if(!strncmp(FrameID_array[info_positon],"作者",strlen("作者")))
+		{
+			insert_jscon_content(g_json,g_array,g_obj,mp3_path,"singer",content_out);
+			insert_jscon_content(g_json,g_array,g_obj,mp3_path,"picpath","");
+		}
 	}
 	
 	free(frame_content);
@@ -380,6 +400,25 @@ int deal_ID3V1_info( char *mp3_file_name )
 	
 	read_mp3_ID3V1_info(id3v1_info,mp3_file_name);
 	LSD_DEBUG("TAG : %s\n",id3v1_info->TAG);
+	
+	if(strlen(id3v1_info->Title) > 30) {
+		id3v1_info->Title[30] = '\0';
+	}
+	else
+	{
+		int len = strlen(id3v1_info->Title);
+		id3v1_info->Title[len] = '\0';
+	}
+	
+	if( strlen( id3v1_info->Artist ) > 30 ) {
+		id3v1_info->Artist[30] = '\0';
+	}
+	else
+	{
+		int len = strlen(id3v1_info->Artist);
+		id3v1_info->Artist[len] = '\0';
+	}
+	
 	code_convert("gbk","utf-8",id3v1_info,sizeof(MP3_ID3V1),id3v1_info_out,sizeof(MP3_ID3V1));
 	LSD_DEBUG("Title:%s  Artist:%s\n",id3v1_info_out->Title,id3v1_info_out->Artist);
 	if( g_json == NULL || g_array == NULL )

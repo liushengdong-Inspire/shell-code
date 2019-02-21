@@ -27,7 +27,7 @@ int add_jscon_content(cJSON *array,cJSON *obj,char *mp3_name,char *title,char *s
 	
 	cJSON_AddItemToArray(array,obj=cJSON_CreateObject());
 	cJSON_AddItemToObject(obj,"name",cJSON_CreateString(mp3_name));
-	if(title == NULL ) 
+	if(title == NULL || strlen(title) < 2) 
 	{
 		cJSON_AddStringToObject(obj,"title","");
 	}
@@ -36,7 +36,7 @@ int add_jscon_content(cJSON *array,cJSON *obj,char *mp3_name,char *title,char *s
 		cJSON_AddStringToObject(obj,"title",title);
 	}
 	
-	if( singer == NULL )
+	if( singer == NULL || strlen(singer) < 2 )
 	{
 		cJSON_AddStringToObject(obj,"singer","");
 	}
@@ -79,6 +79,38 @@ int save_json_content(cJSON *json)
 	fwrite(buf,strlen(buf),1,json_fp);
 	fclose(json_fp);
 	return 0;
+}
+
+//插入JSON信息内容
+int insert_jscon_content(cJSON*json,cJSON *array,cJSON*obj,char *mp3_name,char *item,char *content)
+{
+	printf("LSD enter!\n");
+	if( json == NULL || array == NULL || mp3_name == NULL || item == NULL )
+	{
+		LSD_ERROR("params is  NULL \n");
+		return -1;
+	}
+	
+	printf("jscon = %s\n",cJSON_Print(json));
+	
+	cJSON *node = NULL;
+	cJSON *third = NULL;
+	int size = 0;
+	int i = 0;
+	node = cJSON_GetObjectItem(json,"mp3");
+	if( node == NULL || node->type != cJSON_Array )
+	{
+		LSD_ERROR(" json error !\n");
+		return -1;
+	}
+	
+	size = cJSON_GetArraySize(node);
+	printf("LSD get MP3 node size = %d!\n",size);
+	for(i = 0; i < size;i ++) {
+		third = cJSON_GetArrayItem(node,i);
+		printf("value = %d :%s\n",i,third->valuestring);
+	}
+	
 }
 
 //删除 JSON 缓存
