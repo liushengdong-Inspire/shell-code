@@ -218,7 +218,7 @@ void save_picture(char *mp3_path,int pic_pos,char *content_out,int frame_size,ch
 }
 
 // 解析帧内容信息
-int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos)
+int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos,char **save_path_out)
 {
 	if( mp3_path == NULL )
 	{
@@ -252,7 +252,7 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos)
 	LSD_DEBUG("length = %d\n",length);
 	
 	//获取帧内容，如果内容为空，则不往下处理，直接放回返回当前位置
-	int frame_length = length - 1;
+	int frame_length = length;
 	if( frame_length <= 0 ){
 		*now_pos = ftell(mp3_fp);
 		fclose(mp3_fp);
@@ -328,32 +328,19 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos)
 	LSD_DEBUG("%s : %s\n",FrameID_array_info[info_positon],content_out);
 	if( !strncmp(FrameID_array_info[info_positon],"附加描述",strlen("附加描述")) && !strncmp( content_out,"image/",strlen("image/"))){
 		LSD_INFO("%s : %s\n",FrameID_array_info[info_positon],content_out);
-		char *save_path_out = (char*)malloc(sizeof(char)*BUF_SIZE);
-		if( save_path_out == NULL )
-		{
-			LSD_STDERROR("Malloc save_path_out Error:%s\n",strerror(errno));
-			free(frame_content);
-			frame_content = NULL;
-			free(content_out);
-			content_out = NULL;
-			return -1;
-		}
-		memset(save_path_out,0,BUF_SIZE);
-		save_picture(mp3_path,file_pos_read_charset,content_out,*now_pos,&save_path_out);
-		insert_jscon_content(g_array,&g_obj,"picpath",save_path_out);
-		free(save_path_out);
+		save_picture(mp3_path,file_pos_read_charset,content_out,*now_pos,save_path_out);
 	} else {
 		LSD_INFO("%s : %s\n",FrameID_array_info[info_positon],content_out);
 		
 		if( !strncmp(FrameID_array_info[info_positon],"标题",strlen("标题")))
 		{
 			insert_jscon_content(g_array,&g_obj,"title",content_out);
-			insert_jscon_content(g_array,&g_obj,"picpath","");
+			//insert_jscon_content(g_array,&g_obj,"picpath","");
 		}
 		else if(!strncmp(FrameID_array_info[info_positon],"作者",strlen("作者")))
 		{
 			insert_jscon_content(g_array,&g_obj,"singer",content_out);
-			insert_jscon_content(g_array,&g_obj,"picpath","");
+			//insert_jscon_content(g_array,&g_obj,"picpath","");
 		}
 	}
 	
@@ -447,12 +434,24 @@ int deal_ID3V2_info( char * mp3_file_name )
 	
 	cJSON_AddItemToArray(g_array,g_obj=cJSON_CreateObject());
 	cJSON_AddItemToObject(g_obj,"name",cJSON_CreateString(mp3_file_name));
+	char *save_path_out = (char*)malloc(sizeof(char)*BUF_SIZE);
+	if( save_path_out == NULL )
+	{
+		LSD_STDERROR("Malloc save_path_out Error:%s\n",strerror(errno));
+		return -1;
+	}
+	memset(save_path_out,0,BUF_SIZE);
 	
 	for( i = 0; pos < frame_len; i++ )
 	{
 		//读取并且处理数据，将每次的位置返回
-		read_mp3_ID3VX_info_size(mp3_file_name,pos,&pos);
+		read_mp3_ID3VX_info_size(mp3_file_name,pos,&pos,&save_path_out);
 	}
+	if( strlen(save_path_out) < 4 )
+		insert_jscon_content(g_array,&g_obj,"picpath","");
+	else
+		insert_jscon_content(g_array,&g_obj,"picpath",save_path_out);
+	free(save_path_out);
 	LSD_INFO("\n");
 	return 0;
 }

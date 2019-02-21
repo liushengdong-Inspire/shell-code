@@ -82,9 +82,16 @@ int save_json_content(cJSON *json)
 }
 
 //插入JSON信息内容
-int insert_jscon_content(cJSON* array,cJSON** obj,char *item,char *content)
+int insert_jscon_content(cJSON* array,cJSON** obj,const char *item,char *content)
 {
+	if( array == NULL || item == NULL || obj == NULL )
+	{
+		LSD_ERROR("params is NULL!\n");
+		return -1;
+	}
+	
 	cJSON_AddStringToObject(*obj,item,content);
+	return 0;
 }
 
 //删除 JSON 缓存
