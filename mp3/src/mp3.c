@@ -5,6 +5,9 @@
 #include <string.h>
 #include "LSD_LOG.h"
 #include "save_json.h"
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 //判断 MP3 文件是 ID3V1 还是 ID3V2
 int mp3_type(char *mp3_path)
@@ -159,6 +162,9 @@ void save_picture(char *mp3_path,int pic_pos,char *content_out,int frame_size,ch
 	}
 	memset(save_path,0,BUF_SIZE);
 	snprintf(save_path,BUF_SIZE,"%s/%s%s",PIC_SAVE_PATH,mp3_path,file_type);
+	
+	if(access(save_path,F_OK) != 0)
+		mkdir(save_path,0755);
 	
 	mp3_fp = fopen(mp3_path,"r");
 	pic_fp = fopen(save_path,"w+");
