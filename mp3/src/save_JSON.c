@@ -82,35 +82,9 @@ int save_json_content(cJSON *json)
 }
 
 //插入JSON信息内容
-int insert_jscon_content(cJSON*json,cJSON *array,cJSON*obj,char *mp3_name,char *item,char *content)
+int insert_jscon_content(cJSON* array,cJSON** obj,char *item,char *content)
 {
-	printf("LSD enter!\n");
-	if( json == NULL || array == NULL || mp3_name == NULL || item == NULL )
-	{
-		LSD_ERROR("params is  NULL \n");
-		return -1;
-	}
-	
-	printf("jscon = %s\n",cJSON_Print(json));
-	
-	cJSON *node = NULL;
-	cJSON *third = NULL;
-	int size = 0;
-	int i = 0;
-	node = cJSON_GetObjectItem(json,"mp3");
-	if( node == NULL || node->type != cJSON_Array )
-	{
-		LSD_ERROR(" json error !\n");
-		return -1;
-	}
-	
-	size = cJSON_GetArraySize(node);
-	printf("LSD get MP3 node size = %d!\n",size);
-	for(i = 0; i < size;i ++) {
-		third = cJSON_GetArrayItem(node,i);
-		printf("value = %d :%s\n",i,third->valuestring);
-	}
-	
+	cJSON_AddStringToObject(*obj,item,content);
 }
 
 //删除 JSON 缓存

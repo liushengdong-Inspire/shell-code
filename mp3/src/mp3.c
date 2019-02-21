@@ -340,28 +340,20 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos)
 		}
 		memset(save_path_out,0,BUF_SIZE);
 		save_picture(mp3_path,file_pos_read_charset,content_out,*now_pos,&save_path_out);
-		if( g_json == NULL || g_array == NULL )
-		{
-			init_jscon_framework(&g_json,&g_array);
-		}
-		insert_jscon_content(g_json,g_array,g_obj,mp3_path,"picpath",save_path_out);
+		insert_jscon_content(g_array,&g_obj,"picpath",save_path_out);
 		free(save_path_out);
 	} else {
 		LSD_INFO("%s : %s\n",FrameID_array_info[info_positon],content_out);
-		if( g_json == NULL || g_array == NULL )
-		{
-			init_jscon_framework(&g_json,&g_array);
-		}
 		
-		if( !strncmp(FrameID_array[info_positon],"标题",strlen("标题")))
+		if( !strncmp(FrameID_array_info[info_positon],"标题",strlen("标题")))
 		{
-			insert_jscon_content(g_json,g_array,g_obj,mp3_path,"title",content_out);
-			insert_jscon_content(g_json,g_array,g_obj,mp3_path,"picpath","");
+			insert_jscon_content(g_array,&g_obj,"title",content_out);
+			insert_jscon_content(g_array,&g_obj,"picpath","");
 		}
-		else if(!strncmp(FrameID_array[info_positon],"作者",strlen("作者")))
+		else if(!strncmp(FrameID_array_info[info_positon],"作者",strlen("作者")))
 		{
-			insert_jscon_content(g_json,g_array,g_obj,mp3_path,"singer",content_out);
-			insert_jscon_content(g_json,g_array,g_obj,mp3_path,"picpath","");
+			insert_jscon_content(g_array,&g_obj,"singer",content_out);
+			insert_jscon_content(g_array,&g_obj,"picpath","");
 		}
 	}
 	
@@ -446,6 +438,15 @@ int deal_ID3V2_info( char * mp3_file_name )
 	int pos = 0;
 	int frame_len = read_back_ID3V2_note_size(mp3_file_name);
 	LSD_DEBUG("frame_len = %d\n",frame_len);
+	
+	
+	if( g_json == NULL || g_array == NULL )
+	{
+		init_jscon_framework(&g_json,&g_array);
+	}
+	
+	cJSON_AddItemToArray(g_array,g_obj=cJSON_CreateObject());
+	cJSON_AddItemToObject(g_obj,"name",cJSON_CreateString(mp3_file_name));
 	
 	for( i = 0; pos < frame_len; i++ )
 	{
