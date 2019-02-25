@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">音乐播放</string>
+    <string name="play_txt">播放</string>
+    <string name="pause_txt">暂停</string>
+    <string name="stop_txxt">停止</string>
+    <string name="next_txt">下一首</string>
+    <string name="prev_txt">上一首</string>
+</resources>
