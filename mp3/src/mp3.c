@@ -164,7 +164,7 @@ void save_picture(char *mp3_path,int pic_pos,char *content_out,int frame_size,ch
 	snprintf(save_path,BUF_SIZE,"%s/%s%s",PIC_SAVE_PATH,mp3_path,file_type);
 	
 	if(access(save_path,F_OK) != 0)
-		mkdir(save_path,0755);
+		mkdir(PIC_SAVE_PATH,0755);
 	
 	mp3_fp = fopen(mp3_path,"r");
 	pic_fp = fopen(save_path,"w+");
