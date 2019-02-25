@@ -2,42 +2,29 @@ package vixtel.com.swfirstlogin;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
-import android.media.PlaybackParams;
-import android.net.ethernet.EthernetManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
-import android.view.ContextThemeWrapper;
-import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
-import android.widget.VideoView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MainActivity extends Activity implements View.OnClickListener,MediaPlayer.OnPreparedListener,MediaPlayer.OnCompletionListener{
 
@@ -66,6 +53,27 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
     private final static int MSG_PROGRESS_COUNTER = 1;
     private final static int MSG_LOAD_JSON_FILE = 2;
     private final static int MSG_PARSE_JSON = 3;
+    private static Map<Integer, String[]> mp3Mp3;
+
+    private String[] getMp3Map(int index){
+        if (mp3Mp3 == null  || mp3Mp3.size() == 0) {
+            return null;
+        } else {
+            return mp3Mp3.get(index);
+        }
+    }
+
+    private void putMp3Map(int index,String name,String title,String singer,String picpath){
+        if (mp3Mp3 == null || mp3Mp3.size() == 0) {
+            mp3Mp3 = new HashMap<>();
+        }
+        String []mapString = new String[4];
+        mapString[0] = name;
+        mapString[1] = title;
+        mapString[2] = singer;
+        mapString[3] = picpath;
+        mp3Mp3.put(index,mapString);
+    }
 
     private Handler mHandler = new Handler(new Handler.Callback() {
         @Override
@@ -100,7 +108,6 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
     {
         String path = Environment.getExternalStorageDirectory().getAbsolutePath();
         final long startTime = System.currentTimeMillis();
-        Log.i(TAG,"startTime="+startTime);
         //下载函数
         String filename=mp3JSONPath.substring(mp3JSONPath.lastIndexOf("/") + 1);
         //获取文件名
@@ -133,12 +140,10 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
                 fos.write(buf, 0, numread);
                 downLoadFileSize += numread;
                 int pross = (int)(((double)downLoadFileSize/(double)jsonFileSize)*100);
-                Log.d(TAG,"pross = "+pross);
                 mProgressDialog.setProgress(pross);
                 //更新进度条
             } while (true);
             Log.i(TAG,"download success");
-            Log.i(TAG,"totalTime="+ (System.currentTimeMillis() - startTime));
             fos.close();
             is.close();
             mProgressDialog.setProgress(100);
@@ -172,13 +177,16 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
                 String title = jsonObject.getString("title");
                 String singer = jsonObject.getString("singer");
                 String picpath = jsonObject.getString("picpath");
-                Log.d(TAG,"name = "+name);
-                Log.d(TAG,"title = "+title);
-                Log.d(TAG,"singer = "+singer);
-                Log.d(TAG,"picpath = "+picpath);
-                Log.d(TAG,"");
+                putMp3Map(i,name,title,singer,picpath);
             }
-            //Log.d(TAG,"jsonArray = "+jsonArray.toString());
+
+            for (int i = 0;i < mp3Mp3.size();i++){
+                for (int j = 0;j < 4;j ++) {
+                    if (getMp3Map(i)[j].equals("") || getMp3Map(i)[j].length()< 2)
+                        continue;
+                    Log.d(TAG, "" + getMp3Map(i)[j]);
+                }
+            }
             fileInputStream.close();
         } catch (Exception e) {
             if (fileInputStream != null)
