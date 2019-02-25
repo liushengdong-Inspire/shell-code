@@ -170,7 +170,7 @@ void save_picture(char *mp3_path,int pic_pos,char *content_out,int frame_size,ch
 	pic_fp = fopen(save_path,"w+");
 	if( pic_fp == NULL || mp3_fp == NULL )
 	{
-		LSD_STDERROR("Open File Error:%s\n",strerror(errno));
+		LSD_STDERROR("Open mp3_path=%s Error:%s\n",mp3_path,strerror(errno));
 		if( mp3_fp != NULL )
 			fclose(mp3_fp);
 		return;
@@ -440,12 +440,15 @@ int deal_ID3V2_info( char * mp3_file_name )
 	
 	cJSON_AddItemToArray(g_array,g_obj=cJSON_CreateObject());
 	cJSON_AddItemToObject(g_obj,"name",cJSON_CreateString(mp3_file_name));
+	insert_jscon_content(g_array,&g_obj,"singer","");
+	insert_jscon_content(g_array,&g_obj,"title","");
 	char *save_path_out = (char*)malloc(sizeof(char)*BUF_SIZE);
 	if( save_path_out == NULL )
 	{
 		LSD_STDERROR("Malloc save_path_out Error:%s\n",strerror(errno));
 		return -1;
 	}
+	
 	memset(save_path_out,0,BUF_SIZE);
 	
 	for( i = 0; pos < frame_len; i++ )
