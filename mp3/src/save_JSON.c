@@ -7,12 +7,10 @@
 #include <stdlib.h>
 
 //初始化JSON框架
-int init_jscon_framework(cJSON **json,cJSON **array)
+int init_jscon_framework(cJSON **array)
 {
-	//先创建空对象
-	*json = cJSON_CreateObject();
-	//在对象上添加键值对
-	cJSON_AddItemToObject(*json,"mp3",*array=cJSON_CreateArray());
+	//直接创建序列
+	*array=cJSON_CreateArray();
 	return 0;
 }
 

@@ -5,12 +5,11 @@
 
 #define JSON_SAVE_PATH "./mp3_json.xml"
 
-static cJSON *g_json;
 static cJSON *g_array;
 static cJSON *g_obj;
 
 //初始化JSON框架
-int init_jscon_framework(cJSON **json,cJSON **array);
+int init_jscon_framework(cJSON **array);
 
 //添加JSON信息内容
 int add_jscon_content(cJSON *array,cJSON *obj,char *mp3_name,char *title,char *singer,char *pic_path);

@@ -406,9 +406,9 @@ int deal_ID3V1_info( char *mp3_file_name )
 	
 	code_convert("gbk","utf-8",id3v1_info,sizeof(MP3_ID3V1),id3v1_info_out,sizeof(MP3_ID3V1));
 	LSD_DEBUG("Title:%s  Artist:%s\n",id3v1_info_out->Title,id3v1_info_out->Artist);
-	if( g_json == NULL || g_array == NULL )
+	if( g_array == NULL )
 	{
-		init_jscon_framework(&g_json,&g_array);
+		init_jscon_framework(&g_array);
 	}
 	add_jscon_content(g_array,g_obj,mp3_file_name,id3v1_info_out->Title,id3v1_info_out->Artist,NULL);
 	free(id3v1_info);
@@ -433,9 +433,9 @@ int deal_ID3V2_info( char * mp3_file_name )
 	LSD_DEBUG("frame_len = %d\n",frame_len);
 	
 	
-	if( g_json == NULL || g_array == NULL )
+	if( g_array == NULL )
 	{
-		init_jscon_framework(&g_json,&g_array);
+		init_jscon_framework(&g_array);
 	}
 	
 	cJSON_AddItemToArray(g_array,g_obj=cJSON_CreateObject());
@@ -465,6 +465,6 @@ int deal_ID3V2_info( char * mp3_file_name )
 //处理 JSON 数据
 int deal_with_JSON()
 {
-	save_json_content(g_json);
-	delete_json(g_json);
+	save_json_content(g_array);
+	delete_json(g_array);
 }
