@@ -9,7 +9,9 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -36,13 +38,13 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
     private Button mNextBtn;//下一首
     private TextView mMusiName;
     private ProgressBar mProgress;
+    private ListView mMusicInfoListView;
     private boolean isStop = true; //停止
     private boolean isPause = false; //暂停
     private boolean isLoaded = false;//加载过 URL
     private MediaPlayer mMediaPlayer = null;
     private String mp3JSONPath = "http://10.10.15.50/mp3_json.xml";
     private String mLocalMp3JSONPath = null;
-    private String jsonContentString = null;
     private int jsonFileSize = -1;
     private String musicPath[]  = {"http://www.ytmp3.cn/down/49489.mp3","http://10.10.15.53/zgz.mp3","http://10.10.15.53/ghyjn.mp3","http://10.10.15.53/hh.mp3"};
     private ProgressDialog mProgressDialog = null;
@@ -53,27 +55,10 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
     private final static int MSG_PROGRESS_COUNTER = 1;
     private final static int MSG_LOAD_JSON_FILE = 2;
     private final static int MSG_PARSE_JSON = 3;
-    private static Map<Integer, String[]> mp3Mp3;
 
-    private String[] getMp3Map(int index){
-        if (mp3Mp3 == null  || mp3Mp3.size() == 0) {
-            return null;
-        } else {
-            return mp3Mp3.get(index);
-        }
-    }
-
-    private void putMp3Map(int index,String name,String title,String singer,String picpath){
-        if (mp3Mp3 == null || mp3Mp3.size() == 0) {
-            mp3Mp3 = new HashMap<>();
-        }
-        String []mapString = new String[4];
-        mapString[0] = name;
-        mapString[1] = title;
-        mapString[2] = singer;
-        mapString[3] = picpath;
-        mp3Mp3.put(index,mapString);
-    }
+    Mp3MapInfo mp3NameInfo;
+    Mp3MapInfo mp3Info;
+    Mp3MapInfo mp3PicInfo;
 
     private Handler mHandler = new Handler(new Handler.Callback() {
         @Override
@@ -150,7 +135,6 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
             mHandler.sendEmptyMessage(MSG_PARSE_JSON);
         } catch (Exception ex) {
             Log.d(TAG, "error: " + ex.getMessage(), ex);
-            jsonContentString = null;
             mHandler.sendEmptyMessageDelayed(MSG_LOAD_JSON_FILE,ONE_SECOND);
         }
     }
@@ -177,15 +161,9 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
                 String title = jsonObject.getString("title");
                 String singer = jsonObject.getString("singer");
                 String picpath = jsonObject.getString("picpath");
-                putMp3Map(i,name,title,singer,picpath);
-            }
-
-            for (int i = 0;i < mp3Mp3.size();i++){
-                for (int j = 0;j < 4;j ++) {
-                    if (getMp3Map(i)[j].equals("") || getMp3Map(i)[j].length()< 2)
-                        continue;
-                    Log.d(TAG, "" + getMp3Map(i)[j]);
-                }
+                mp3NameInfo.setValue(i,name);
+                mp3Info.setValue(i,title+"/"+singer);
+                mp3PicInfo.setValue(i,picpath);
             }
             fileInputStream.close();
         } catch (Exception e) {
@@ -203,15 +181,18 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        initData();
         if( mProgressDialog == null ) {
             mProgressDialog = new ProgressDialog(this);
         }
+        mp3NameInfo = new Mp3MapInfo();
+        mp3PicInfo = new Mp3MapInfo();
+        mp3Info = new Mp3MapInfo();
         mProgressDialog.setTitle("加载列表");
         mProgressDialog.setMessage("列表加载中，请稍后......");
         mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         mProgressDialog.show();
         mHandler.sendEmptyMessage(MSG_LOAD_JSON_FILE);
+        initData();
     }
 
     private void counterProgress() {
@@ -244,6 +225,10 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
         mNextBtn.setOnClickListener(this);
         mMusiName = (TextView)findViewById(R.id.musicName);
         mProgress = (ProgressBar)findViewById(R.id.musicProgress);
+        mMusicInfoListView = (ListView)findViewById(R.id.musicInfoListView);
+        String [] stringsArray = {"lsd","lky","123","234","345","456"};
+        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,stringsArray);
+        mMusicInfoListView.setAdapter(arrayAdapter);
         //mHandler.sendEmptyMessage(MSG_PROGRESS_COUNTER);
     }
 
@@ -366,7 +351,7 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
             //不是暂停或者停止状态，直接开始播放音乐
             if (!isStop && !isPause) {
                 mProgressDialog.dismiss();
-                mMusiName.setText("");
+                mMusiName.setText("起风了");
                 mediaPlayer.start();
             }
         }
