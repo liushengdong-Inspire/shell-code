@@ -10,6 +10,10 @@ import java.util.Map;
 class Mp3MapInfo {
     private Map<Integer,String> mMap;
 
+    public Map<Integer,String> getInstance() {
+      return mMap;
+    };
+
     public Mp3MapInfo() {
         mMap = new HashMap<>();
     };

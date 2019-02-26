@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
@@ -43,18 +44,21 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
     private boolean isPause = false; //暂停
     private boolean isLoaded = false;//加载过 URL
     private MediaPlayer mMediaPlayer = null;
-    private String mp3JSONPath = "http://10.10.15.50/mp3_json.xml";
+    private String mp3JSONPath = "http://10.10.15.53/mp3_json.xml";
     private String mLocalMp3JSONPath = null;
     private int jsonFileSize = -1;
-    private String musicPath[]  = {"http://www.ytmp3.cn/down/49489.mp3","http://10.10.15.53/zgz.mp3","http://10.10.15.53/ghyjn.mp3","http://10.10.15.53/hh.mp3"};
+    private String serverAddress = "http://10.10.15.53/";
+    private String musicPath  = "";
     private ProgressDialog mProgressDialog = null;
     private int musicNumber = 0;
     private int musicCounter = 0;
+    private boolean isInit  = false;
     private final static int ONE_SECOND = 1000;
 
     private final static int MSG_PROGRESS_COUNTER = 1;
     private final static int MSG_LOAD_JSON_FILE = 2;
     private final static int MSG_PARSE_JSON = 3;
+    private final static int MSG_INIT_PARAM = 4;
 
     Mp3MapInfo mp3NameInfo;
     Mp3MapInfo mp3Info;
@@ -84,6 +88,9 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
                     }).start();
 
                     break;
+                case MSG_INIT_PARAM:
+                    initData();
+                    break;
             }
             return false;
         }
@@ -91,19 +98,22 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
 
     private  void loadMp3Json()
     {
+        Log.d(TAG,"Enter");
         String path = Environment.getExternalStorageDirectory().getAbsolutePath();
         final long startTime = System.currentTimeMillis();
         //下载函数
         String filename=mp3JSONPath.substring(mp3JSONPath.lastIndexOf("/") + 1);
         //获取文件名
+        Log.d(TAG,"Enter filename = "+filename);
         try{
             URL myURL = new URL(mp3JSONPath);
             URLConnection conn = myURL.openConnection();
             conn.connect();
+            Log.d(TAG,"Enter connected");
             InputStream is = conn.getInputStream();
             jsonFileSize = conn.getContentLength();
             if (jsonFileSize <= 0 )
-                return;
+                Log.d(TAG,"Enter jsonFileSize = "+jsonFileSize);
             Log.d(TAG,"size = "+conn.getContentLength()+" ");
             if (is == null) throw new RuntimeException("stream is null");
             File file1 = new File(path);
@@ -150,9 +160,15 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
         FileInputStream fileInputStream = null;
         try {
             fileInputStream = new FileInputStream(mLocalMp3JSONPath);
-            byte []buff = new byte[jsonFileSize];
-            fileInputStream.read(buff);
-            String content = new String(buff);
+            StringBuilder sb = new StringBuilder("");
+            byte []buff = new byte[1024];
+            int len = 0;
+            len = fileInputStream.read(buff);
+            while ((len > 0)) {
+                sb.append(new String(buff,0,len));
+                len = fileInputStream.read(buff);
+            }
+            String content = new String(sb);
             JSONArray jsonArray = new JSONArray(content);
             for (int i = 0;i < jsonArray.length();i ++)
             {
@@ -160,12 +176,14 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
                 String name = jsonObject.getString("name");
                 String title = jsonObject.getString("title");
                 String singer = jsonObject.getString("singer");
-                String picpath = jsonObject.getString("picpath");
+                String picturePath = jsonObject.getString("picpath");
                 mp3NameInfo.setValue(i,name);
                 mp3Info.setValue(i,title+"/"+singer);
-                mp3PicInfo.setValue(i,picpath);
+                mp3PicInfo.setValue(i,picturePath);
             }
+            mProgressDialog.cancel();
             fileInputStream.close();
+            mHandler.sendEmptyMessage(MSG_INIT_PARAM);
         } catch (Exception e) {
             if (fileInputStream != null)
                 try {
@@ -192,7 +210,6 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
         mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         mProgressDialog.show();
         mHandler.sendEmptyMessage(MSG_LOAD_JSON_FILE);
-        initData();
     }
 
     private void counterProgress() {
@@ -226,13 +243,27 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
         mMusiName = (TextView)findViewById(R.id.musicName);
         mProgress = (ProgressBar)findViewById(R.id.musicProgress);
         mMusicInfoListView = (ListView)findViewById(R.id.musicInfoListView);
-        String [] stringsArray = {"lsd","lky","123","234","345","456"};
+        final int mp3NameInfoSize = mp3NameInfo.getInstance().size();
+        String [] stringsArray = new String[mp3NameInfoSize];
+        for (int i = 0;i < mp3NameInfoSize;i ++)
+            stringsArray[i] = mp3NameInfo.getValue(i);
         ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,stringsArray);
         mMusicInfoListView.setAdapter(arrayAdapter);
+        mMusicInfoListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                Log.d(TAG,"select "+mp3NameInfo.getValue(i));
+                String playUrl = serverAddress+mp3NameInfo.getValue(i);
+                musicPath = playUrl;
+                Log.d(TAG,"musicPath = "+musicPath);
+                stopPlayer();
+                initPlayer(musicPath);
+            }
+        });
         //mHandler.sendEmptyMessage(MSG_PROGRESS_COUNTER);
     }
 
-    private boolean initPlayer() {
+    private boolean initPlayer(String mp3Path) {
 
         //加载提示框
         if (mProgressDialog == null ) {
@@ -254,7 +285,7 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
                 isStop = false;
                 isLoaded = true;
                 isPause = false;
-                mMediaPlayer.setDataSource(musicPath[musicNumber]);
+                mMediaPlayer.setDataSource(mp3Path);
                 mMediaPlayer.prepareAsync();
                 mMediaPlayer.setOnPreparedListener(this);
                 mMediaPlayer.setOnCompletionListener(this);
@@ -284,21 +315,25 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
 
     @Override
     protected void onResume() {
-        if (initPlayer()) {
-            super.onResume();
-            return;
-        }
+        if (isInit) {
+            if (initPlayer(musicPath)) {
+                super.onResume();
+                return;
+            }
 
-        if (!isPause) {
-            mMediaPlayer.start();
+            if (!isPause) {
+                mMediaPlayer.start();
+            }
         }
         super.onResume();
     }
 
     @Override
     protected void onPause() {
-        if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
-            mMediaPlayer.pause();
+        if (isInit) {
+            if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
+                mMediaPlayer.pause();
+            }
         }
         super.onPause();
     }
@@ -307,7 +342,7 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.playBtn:
-                if (initPlayer()) {
+                if (initPlayer(musicPath)) {
                     return;
                 }
                 if (isPause) {
@@ -328,18 +363,18 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
             case R.id.prevBtn:
                 musicNumber --;
                 if (musicNumber < 0) {
-                    musicNumber = musicPath.length - 1;
+                    musicNumber =  mp3NameInfo.getInstance().size();
                 }
                 stopPlayer();
-                initPlayer();
+                initPlayer(musicPath);
                 break;
             case R.id.nextBtn:
                 musicNumber ++;
-                if (musicNumber >= musicPath.length ) {
+                if (musicNumber >= mp3NameInfo.getInstance().size() ) {
                     musicNumber = 0;
                 }
                 stopPlayer();
-                initPlayer();
+                initPlayer(musicPath);
                 break;
         }
     }
@@ -361,10 +396,18 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
     public void onCompletion(MediaPlayer mediaPlayer) {
         Log.d(TAG,"onCompletion!");
         musicNumber ++;
-        if (musicNumber >= musicPath.length ) {
+        if (musicNumber >= mp3NameInfo.getInstance().size() ) {
             musicNumber = 0;
         }
         stopPlayer();
-        initPlayer();
+        initPlayer(serverAddress+mp3NameInfo.getValue(musicNumber));
+        String content[] = mp3Info.getValue(musicNumber).split("/");
+        mMusiName.setText("");
+        if (!content[0].equals("") ||content[0].length() > 2 )
+            mMusiName.setText(content[0]);
+        if (!content[1].equals("") || content[1].length() > 2) {
+            String txt = mMusiName.getText().toString();
+            mMusiName.setText(txt+"  "+content[1]);
+        }
     }
 }
