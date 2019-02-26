@@ -2,7 +2,10 @@ package vixtel.com.swfirstlogin;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -12,6 +15,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -40,6 +44,7 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
     private TextView mMusiName;
     private ProgressBar mProgress;
     private ListView mMusicInfoListView;
+    private ImageView mImageView = null;
     private boolean isStop = true; //停止
     private boolean isPause = false; //暂停
     private boolean isLoaded = false;//加载过 URL
@@ -59,6 +64,8 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
     private final static int MSG_LOAD_JSON_FILE = 2;
     private final static int MSG_PARSE_JSON = 3;
     private final static int MSG_INIT_PARAM = 4;
+    private final static int MSG_SET_MUSIC_NAME = 5;
+    private final static int MSG_DOWNLOAD_PICTURE = 6;
 
     Mp3MapInfo mp3NameInfo;
     Mp3MapInfo mp3Info;
@@ -91,10 +98,95 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
                 case MSG_INIT_PARAM:
                     initData();
                     break;
+                case MSG_SET_MUSIC_NAME:
+                    Log.d(TAG," mp3Info size = "+mp3Info.getInstance().size());
+                    if (musicNumber < mp3Info.getInstance().size()) {
+                        String txt = mp3Info.getValue(musicNumber);
+                        if (txt.length() > mp3NameInfo.getValue(musicNumber).length()) {
+                            mMusiName.setText(txt);
+                        }else {
+                            String name[] = mp3NameInfo.getValue(musicNumber).split(".mp3");
+                            mMusiName.setText(name[0]);
+                        }
+
+                        Log.d(TAG,"begin to setImage");
+                        if(mp3PicInfo.getValue(musicNumber).equals("")) {
+                            mImageView.setImageResource(R.mipmap.lsd);
+                        }else {
+                            String picturePath = mp3PicInfo.getValue(musicNumber);
+                            String fileName = picturePath.substring(picturePath.lastIndexOf("/")+1);
+                            String path = Environment.getExternalStorageDirectory().getAbsolutePath();
+                            String pic = path+"/"+fileName;
+                            Log.d(TAG,"picture path = "+pic);
+                            try {
+                                FileInputStream fis = new FileInputStream(pic);
+                                int sizeRead = fis.read();
+                                Log.d(TAG,"sizeRead = "+sizeRead);
+                                mImageView.setImageURI(Uri.parse(pic));
+                                //Bitmap bitmap = BitmapFactory.decodeFile("/mnt/sdcard/sz.jpg");
+                                //mImageView.setImageBitmap(bitmap);
+                            }catch (Exception e) {
+                                Log.d(TAG, "error: " + e.getMessage(), e);
+                            }
+                        }
+                    }
+                    break;
+                case MSG_DOWNLOAD_PICTURE:
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            downLoadPicture();
+                        }
+                    }).start();
+                    break;
             }
             return false;
         }
     });
+
+    private void downLoadPicture()
+    {
+        Log.d(TAG,"downLoadPicture");
+        String path = Environment.getExternalStorageDirectory().getAbsolutePath();
+        for (int i = 0;i < mp3PicInfo.getInstance().size();i ++)
+        {
+            String picturePath = mp3PicInfo.getValue(i);
+            if (!picturePath.equals("")) {
+                Log.d(TAG,"picture path = "+picturePath);
+                String fileName = picturePath.substring(picturePath.lastIndexOf("/")+1);
+                Log.d(TAG,"picture name = "+fileName);
+                try {
+                    String serverPath = serverAddress+picturePath;
+                    Log.d(TAG,"serverPath = "+serverPath);
+                    URL downloadUrl = new URL(serverPath);
+                    URLConnection conn = downloadUrl.openConnection();
+                    conn.connect();
+                    Log.d(TAG,"connected!");
+                    InputStream is = conn.getInputStream();
+                    if (is == null )throw new RuntimeException("picture download Error!");
+                    File file = new File(path);
+                    if (!file.exists())
+                        file.mkdirs();
+                    String pictureSavePath = path+"/"+fileName;
+                    FileOutputStream fos = new FileOutputStream(pictureSavePath);
+                    byte[] buff = new byte[1024];
+                    do {
+                        int readSize = is.read(buff);
+                        if (readSize == -1)
+                            break;
+                        fos.write(buff,0,readSize);
+                    }while (true);
+                    Log.d(TAG,"picture download success!");
+                    fos.close();
+                    is.close();
+                }catch (Exception e) {
+                    Log.d(TAG, "error: " + e.getMessage(), e);
+                }
+            }
+        }
+        mProgressDialog.cancel();
+        mHandler.sendEmptyMessage(MSG_INIT_PARAM);
+    }
 
     private  void loadMp3Json()
     {
@@ -181,9 +273,8 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
                 mp3Info.setValue(i,title+"/"+singer);
                 mp3PicInfo.setValue(i,picturePath);
             }
-            mProgressDialog.cancel();
             fileInputStream.close();
-            mHandler.sendEmptyMessage(MSG_INIT_PARAM);
+            mHandler.sendEmptyMessage(MSG_DOWNLOAD_PICTURE);
         } catch (Exception e) {
             if (fileInputStream != null)
                 try {
@@ -213,7 +304,7 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
     }
 
     private void counterProgress() {
-        if (isLoaded && mMediaPlayer!=null && mMediaPlayer.isPlaying()) {
+        if (mMediaPlayer!=null && mMediaPlayer.isPlaying()) {
             double musicLength = mMediaPlayer.getDuration();
             double curretPos = mMediaPlayer.getCurrentPosition();
             int progressNum = (int)((curretPos/musicLength)*100);
@@ -226,7 +317,7 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
                 mProgress.setProgress(0);
             }
         }
-        //mHandler.sendEmptyMessageDelayed(MSG_PROGRESS_COUNTER,ONE_SECOND);
+        mHandler.sendEmptyMessage(MSG_PROGRESS_COUNTER);
     }
 
     private void initData() {
@@ -243,6 +334,7 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
         mMusiName = (TextView)findViewById(R.id.musicName);
         mProgress = (ProgressBar)findViewById(R.id.musicProgress);
         mMusicInfoListView = (ListView)findViewById(R.id.musicInfoListView);
+        mImageView = (ImageView)findViewById(R.id.musicImageView);
         final int mp3NameInfoSize = mp3NameInfo.getInstance().size();
         String [] stringsArray = new String[mp3NameInfoSize];
         for (int i = 0;i < mp3NameInfoSize;i ++)
@@ -253,6 +345,7 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 Log.d(TAG,"select "+mp3NameInfo.getValue(i));
+                musicNumber = i;
                 String playUrl = serverAddress+mp3NameInfo.getValue(i);
                 musicPath = playUrl;
                 Log.d(TAG,"musicPath = "+musicPath);
@@ -363,10 +456,11 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
             case R.id.prevBtn:
                 musicNumber --;
                 if (musicNumber < 0) {
-                    musicNumber =  mp3NameInfo.getInstance().size();
+                    musicNumber = mp3NameInfo.getInstance().size() - 1 ;
                 }
                 stopPlayer();
-                initPlayer(musicPath);
+                String namePrev = serverAddress+mp3NameInfo.getValue(musicNumber);
+                initPlayer(namePrev);
                 break;
             case R.id.nextBtn:
                 musicNumber ++;
@@ -374,7 +468,8 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
                     musicNumber = 0;
                 }
                 stopPlayer();
-                initPlayer(musicPath);
+                String nameNext = serverAddress+mp3NameInfo.getValue(musicNumber);
+                initPlayer(nameNext);
                 break;
         }
     }
@@ -386,8 +481,9 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
             //不是暂停或者停止状态，直接开始播放音乐
             if (!isStop && !isPause) {
                 mProgressDialog.dismiss();
-                mMusiName.setText("起风了");
                 mediaPlayer.start();
+                mHandler.sendEmptyMessage(MSG_SET_MUSIC_NAME);
+                mHandler.sendEmptyMessageDelayed(MSG_PROGRESS_COUNTER,ONE_SECOND);
             }
         }
     }
@@ -401,13 +497,5 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
         }
         stopPlayer();
         initPlayer(serverAddress+mp3NameInfo.getValue(musicNumber));
-        String content[] = mp3Info.getValue(musicNumber).split("/");
-        mMusiName.setText("");
-        if (!content[0].equals("") ||content[0].length() > 2 )
-            mMusiName.setText(content[0]);
-        if (!content[1].equals("") || content[1].length() > 2) {
-            String txt = mMusiName.getText().toString();
-            mMusiName.setText(txt+"  "+content[1]);
-        }
     }
 }
