@@ -4,7 +4,7 @@
 #define MP3_TYPE_SIZE 3
 #define MP3_ID3V1_INFO_LENTH 128
 #define BUF_SIZE 2048
-#define PIC_SAVE_PATH "./picture/"
+#define PIC_SAVE_PATH "picture"
 
 #include <stdio.h>
 
