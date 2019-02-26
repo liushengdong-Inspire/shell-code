@@ -115,16 +115,15 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
                         }else {
                             String picturePath = mp3PicInfo.getValue(musicNumber);
                             String fileName = picturePath.substring(picturePath.lastIndexOf("/")+1);
+                            String fileNamePriv[] = fileName.split(".mp3");
                             String path = Environment.getExternalStorageDirectory().getAbsolutePath();
-                            String pic = path+"/"+fileName;
+                            String pic = path+"/"+fileNamePriv[0]+".jpg";
                             Log.d(TAG,"picture path = "+pic);
                             try {
                                 FileInputStream fis = new FileInputStream(pic);
                                 int sizeRead = fis.read();
-                                Log.d(TAG,"sizeRead = "+sizeRead);
                                 mImageView.setImageURI(Uri.parse(pic));
-                                //Bitmap bitmap = BitmapFactory.decodeFile("/mnt/sdcard/sz.jpg");
-                                //mImageView.setImageBitmap(bitmap);
+                                fis.close();
                             }catch (Exception e) {
                                 Log.d(TAG, "error: " + e.getMessage(), e);
                             }
@@ -154,6 +153,9 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
             if (!picturePath.equals("")) {
                 Log.d(TAG,"picture path = "+picturePath);
                 String fileName = picturePath.substring(picturePath.lastIndexOf("/")+1);
+                String fileNamePriv[] = fileName.split(".mp3");
+                fileName = fileNamePriv[0];
+                fileName = fileName+".jpg";
                 Log.d(TAG,"picture name = "+fileName);
                 try {
                     String serverPath = serverAddress+picturePath;
