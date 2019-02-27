@@ -47,11 +47,8 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
     private ImageView mImageView = null;
     private boolean isStop = true; //停止
     private boolean isPause = false; //暂停
-    private boolean isLoaded = false;//加载过 URL
     private MediaPlayer mMediaPlayer = null;
-    private String mp3JSONPath = "http://10.10.15.53/mp3_json.xml";
     private String mLocalMp3JSONPath = null;
-    private int jsonFileSize = -1;
     private String serverAddress = "http://10.10.15.53/";
     private String musicPath  = "";
     private ProgressDialog mProgressDialog = null;
@@ -82,7 +79,7 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
-                            loadMp3Json();
+                            mLocalMp3JSONPath = downloadFunction("./mp3_json.xml",MSG_PARSE_JSON,MSG_LOAD_JSON_FILE);
                         }
                     }).start();
                     break;
@@ -134,7 +131,12 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
-                            downLoadPicture();
+                            for (int i = 0;i < mp3PicInfo.getInstance().size(); i ++) {
+                                String pictureTxt = mp3PicInfo.getValue(i);
+                                if (!pictureTxt.equals(""))
+                                    downloadFunction(mp3PicInfo.getValue(i),MSG_INIT_PARAM,-1);
+                            }
+                            mProgressDialog.cancel();
                         }
                     }).start();
                     break;
@@ -143,103 +145,50 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
         }
     });
 
-    private void downLoadPicture()
-    {
-        Log.d(TAG,"downLoadPicture");
-        String path = Environment.getExternalStorageDirectory().getAbsolutePath();
-        for (int i = 0;i < mp3PicInfo.getInstance().size();i ++)
-        {
-            String picturePath = mp3PicInfo.getValue(i);
-            if (!picturePath.equals("")) {
-                Log.d(TAG,"picture path = "+picturePath);
-                String fileName = picturePath.substring(picturePath.lastIndexOf("/")+1);
-                String fileNamePriv[] = fileName.split(".mp3");
-                fileName = fileNamePriv[0];
-                fileName = fileName+".jpg";
-                Log.d(TAG,"picture name = "+fileName);
-                try {
-                    String serverPath = serverAddress+picturePath;
-                    Log.d(TAG,"serverPath = "+serverPath);
-                    URL downloadUrl = new URL(serverPath);
-                    URLConnection conn = downloadUrl.openConnection();
-                    conn.connect();
-                    Log.d(TAG,"connected!");
-                    InputStream is = conn.getInputStream();
-                    if (is == null )throw new RuntimeException("picture download Error!");
-                    File file = new File(path);
-                    if (!file.exists())
-                        file.mkdirs();
-                    String pictureSavePath = path+"/"+fileName;
-                    FileOutputStream fos = new FileOutputStream(pictureSavePath);
-                    byte[] buff = new byte[1024];
-                    do {
-                        int readSize = is.read(buff);
-                        if (readSize == -1)
-                            break;
-                        fos.write(buff,0,readSize);
-                    }while (true);
-                    Log.d(TAG,"picture download success!");
-                    fos.close();
-                    is.close();
-                }catch (Exception e) {
-                    Log.d(TAG, "error: " + e.getMessage(), e);
-                }
-            }
+    private String downloadFunction(String filePath,int successMsg,int errorMsg) {
+        Log.d(TAG,"Enter downloadFunction");
+        String savePathDirectory =  Environment.getExternalStorageDirectory().getAbsolutePath();
+        Log.d(TAG,"save path directory  = "+savePathDirectory);
+        String fileName = filePath.substring(filePath.lastIndexOf("/")+1);
+        if (fileName.contains(".mp3.jpg")) {
+            String fileNamePart[] = fileName.split(".mp3.jpg");
+            fileName = fileNamePart[0]+".jpg";
         }
-        mProgressDialog.cancel();
-        mHandler.sendEmptyMessage(MSG_INIT_PARAM);
-    }
-
-    private  void loadMp3Json()
-    {
-        Log.d(TAG,"Enter");
-        String path = Environment.getExternalStorageDirectory().getAbsolutePath();
-        final long startTime = System.currentTimeMillis();
-        //下载函数
-        String filename=mp3JSONPath.substring(mp3JSONPath.lastIndexOf("/") + 1);
-        //获取文件名
-        Log.d(TAG,"Enter filename = "+filename);
+        Log.d(TAG,"fileName = "+fileName);
         try{
-            URL myURL = new URL(mp3JSONPath);
-            URLConnection conn = myURL.openConnection();
+            String serverPath = serverAddress+filePath;
+            Log.d(TAG,"serverPath = "+serverPath);
+            URL myUrl = new URL(serverPath);
+            URLConnection conn = myUrl.openConnection();
             conn.connect();
-            Log.d(TAG,"Enter connected");
-            InputStream is = conn.getInputStream();
-            jsonFileSize = conn.getContentLength();
-            if (jsonFileSize <= 0 )
-                Log.d(TAG,"Enter jsonFileSize = "+jsonFileSize);
-            Log.d(TAG,"size = "+conn.getContentLength()+" ");
-            if (is == null) throw new RuntimeException("stream is null");
-            File file1 = new File(path);
-            if(!file1.exists()){
-                file1.mkdirs();
-            }
-            //把数据存入路径+文件名
-            mLocalMp3JSONPath = path+"/"+filename;
-            FileOutputStream fos = new FileOutputStream(mLocalMp3JSONPath);
-            byte buf[] = new byte[1024];
-            int downLoadFileSize = 0;
+            InputStream iS = conn.getInputStream();
+            int streamSize = conn.getContentLength();
+            if (streamSize <= 0)
+                Log.d(TAG,"streamSize = "+streamSize);
+            if (iS == null) throw new RuntimeException("stream is null");
+            File file = new File(savePathDirectory);
+            if (!file.exists())
+                file.mkdirs();
+            String savePath = savePathDirectory+"/"+fileName;
+            Log.d(TAG,"save path = "+savePath);
+            FileOutputStream fos = new FileOutputStream(savePath);
+            byte buff[] = new byte[1024];
             do{
-                //循环读取
-                int numread = is.read(buf);
-                if (numread == -1)
-                {
+                int numberRead = iS.read(buff);
+                if (numberRead == -1) {
                     break;
                 }
-                fos.write(buf, 0, numread);
-                downLoadFileSize += numread;
-                int pross = (int)(((double)downLoadFileSize/(double)jsonFileSize)*100);
-                mProgressDialog.setProgress(pross);
-                //更新进度条
-            } while (true);
-            Log.i(TAG,"download success");
+                fos.write(buff,0,numberRead);
+            }while (true);
+            Log.d(TAG,"download "+serverPath+" success!");
             fos.close();
-            is.close();
-            mProgressDialog.setProgress(100);
-            mHandler.sendEmptyMessage(MSG_PARSE_JSON);
-        } catch (Exception ex) {
-            Log.d(TAG, "error: " + ex.getMessage(), ex);
-            mHandler.sendEmptyMessageDelayed(MSG_LOAD_JSON_FILE,ONE_SECOND);
+            iS.close();
+            mHandler.sendEmptyMessage(successMsg);
+            return savePath;
+        }catch (Exception e) {
+            Log.d(TAG,"Error: "+e.getMessage(),e);
+            mHandler.sendEmptyMessageDelayed(errorMsg,ONE_SECOND);
+            return  "";
         }
     }
 
@@ -254,16 +203,14 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
         FileInputStream fileInputStream = null;
         try {
             fileInputStream = new FileInputStream(mLocalMp3JSONPath);
-            StringBuilder sb = new StringBuilder("");
-            byte []buff = new byte[1024];
+            int fileSize = fileInputStream.available();
+            byte []buff = new byte[fileSize];
             int len = 0;
             len = fileInputStream.read(buff);
-            while ((len > 0)) {
-                sb.append(new String(buff,0,len));
-                len = fileInputStream.read(buff);
-            }
-            String content = new String(sb);
+            String content = new String(buff,0,fileSize,"utf-8");
+            Log.d(TAG,"read len = "+len+" available = "+fileSize+" content = "+content.length());
             JSONArray jsonArray = new JSONArray(content);
+            Log.d(TAG,"length js = "+jsonArray.length());
             for (int i = 0;i < jsonArray.length();i ++)
             {
                 JSONObject jsonObject = jsonArray.getJSONObject(i);
@@ -274,6 +221,7 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
                 mp3NameInfo.setValue(i,name);
                 mp3Info.setValue(i,title+"/"+singer);
                 mp3PicInfo.setValue(i,picturePath);
+                //Log.d(TAG,"js i = "+i);
             }
             fileInputStream.close();
             mHandler.sendEmptyMessage(MSG_DOWNLOAD_PICTURE);
@@ -298,9 +246,8 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
         mp3NameInfo = new Mp3MapInfo();
         mp3PicInfo = new Mp3MapInfo();
         mp3Info = new Mp3MapInfo();
-        mProgressDialog.setTitle("加载列表");
-        mProgressDialog.setMessage("列表加载中，请稍后......");
-        mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+        mProgressDialog.setTitle("加载数据");
+        mProgressDialog.setMessage("远程数据加载中，请稍后......");
         mProgressDialog.show();
         mHandler.sendEmptyMessage(MSG_LOAD_JSON_FILE);
     }
@@ -339,6 +286,7 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
         mImageView = (ImageView)findViewById(R.id.musicImageView);
         final int mp3NameInfoSize = mp3NameInfo.getInstance().size();
         String [] stringsArray = new String[mp3NameInfoSize];
+        Log.d(TAG,"mp3NameInfoSize = "+mp3NameInfoSize);
         for (int i = 0;i < mp3NameInfoSize;i ++)
             stringsArray[i] = mp3NameInfo.getValue(i);
         ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,stringsArray);
@@ -378,7 +326,6 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
         if ( isStop ) {
             try {
                 isStop = false;
-                isLoaded = true;
                 isPause = false;
                 mMediaPlayer.setDataSource(mp3Path);
                 mMediaPlayer.prepareAsync();
@@ -397,7 +344,6 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
         if (mMediaPlayer != null) {
             try {
                 isStop = true;
-                isLoaded = false;
                 mMediaPlayer.stop();
                 mMediaPlayer.reset();
                 mMediaPlayer.release();
