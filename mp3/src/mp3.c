@@ -337,7 +337,6 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos,char **
 		save_picture(mp3_path,file_pos_read_charset,content_out,*now_pos,save_path_out);
 	} else {
 		LSD_INFO("%s : %s\n",FrameID_array_info[info_positon],content_out);
-		
 		if( !strncmp(FrameID_array_info[info_positon],"标题",strlen("标题")))
 		{
 			insert_jscon_content(g_array,&g_obj,"title",content_out);
@@ -395,6 +394,7 @@ int deal_ID3V1_info( char *mp3_file_name )
 	{
 		int len = strlen(id3v1_info->Title);
 		id3v1_info->Title[len] = '\0';
+		memset(&id3v1_info->Title[len],0,(30-len));
 	}
 	
 	if( strlen( id3v1_info->Artist ) > 30 ) {
@@ -404,6 +404,7 @@ int deal_ID3V1_info( char *mp3_file_name )
 	{
 		int len = strlen(id3v1_info->Artist);
 		id3v1_info->Artist[len] = '\0';
+		memset(&id3v1_info->Artist[len],0,(30-len));
 	}
 	
 	code_convert("gbk","utf-8",id3v1_info,sizeof(MP3_ID3V1),id3v1_info_out,sizeof(MP3_ID3V1));
