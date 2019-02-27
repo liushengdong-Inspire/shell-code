@@ -28,6 +28,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashMap;
@@ -56,6 +57,7 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
     private int musicCounter = 0;
     private boolean isInit  = false;
     private final static int ONE_SECOND = 1000;
+    private final static int TIME_OUT = 5*ONE_SECOND;
 
     private final static int MSG_PROGRESS_COUNTER = 1;
     private final static int MSG_LOAD_JSON_FILE = 2;
@@ -100,7 +102,13 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
                     if (musicNumber < mp3Info.getInstance().size()) {
                         String txt = mp3Info.getValue(musicNumber);
                         if (txt.length() > mp3NameInfo.getValue(musicNumber).length()) {
-                            mMusiName.setText(txt);
+                            String temp[] = txt.split("/");
+                            if (temp.length == 1) {
+                                mMusiName.setText(temp[0]);
+                            }
+                            else if (temp.length == 2) {
+                                mMusiName.setText(temp[0] + " "+temp[1]);
+                            }
                         }else {
                             String name[] = mp3NameInfo.getValue(musicNumber).split(".mp3");
                             mMusiName.setText(name[0]);
@@ -114,7 +122,7 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
                             String fileName = picturePath.substring(picturePath.lastIndexOf("/")+1);
                             String fileNamePriv[] = fileName.split(".mp3");
                             String path = Environment.getExternalStorageDirectory().getAbsolutePath();
-                            String pic = path+"/"+fileNamePriv[0]+".jpg";
+                            String pic = path+"/"+fileNamePriv[0];
                             Log.d(TAG,"picture path = "+pic);
                             try {
                                 FileInputStream fis = new FileInputStream(pic);
@@ -159,32 +167,51 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
             String serverPath = serverAddress+filePath;
             Log.d(TAG,"serverPath = "+serverPath);
             URL myUrl = new URL(serverPath);
-            URLConnection conn = myUrl.openConnection();
+            HttpURLConnection conn = (HttpURLConnection)myUrl.openConnection();
+            conn.setConnectTimeout(TIME_OUT);
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty(
+                    "Accept",
+                    "image/gif, image/jpeg, image/pjpeg, image/pjpeg, application/x-shockwave-flash, application/xaml+xml, application/vnd.ms-xpsdocument, application/x-ms-xbap, application/x-ms-application, application/vnd.ms-excel, application/vnd.ms-powerpoint, application/msword, */*");
+            conn.setRequestProperty("Accept-Language", "zh-CN");
+            conn.setRequestProperty("Referer", serverPath);
+            conn.setRequestProperty(
+                    "User-Agent",
+                    "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.2; Trident/4.0; .NET CLR 1.1.4322; .NET CLR 2.0.50727; .NET CLR 3.0.04506.30; .NET CLR 3.0.4506.2152; .NET CLR 3.5.30729)");
+            conn.setRequestProperty("Connection", "Keep-Alive");
             conn.connect();
-            InputStream iS = conn.getInputStream();
-            int streamSize = conn.getContentLength();
-            if (streamSize <= 0)
-                Log.d(TAG,"streamSize = "+streamSize);
-            if (iS == null) throw new RuntimeException("stream is null");
-            File file = new File(savePathDirectory);
-            if (!file.exists())
-                file.mkdirs();
-            String savePath = savePathDirectory+"/"+fileName;
-            Log.d(TAG,"save path = "+savePath);
-            FileOutputStream fos = new FileOutputStream(savePath);
-            byte buff[] = new byte[1024];
-            do{
-                int numberRead = iS.read(buff);
-                if (numberRead == -1) {
-                    break;
-                }
-                fos.write(buff,0,numberRead);
-            }while (true);
-            Log.d(TAG,"download "+serverPath+" success!");
-            fos.close();
-            iS.close();
-            mHandler.sendEmptyMessage(successMsg);
-            return savePath;
+            if (conn.getResponseCode() == 200) {
+                InputStream iS = conn.getInputStream();
+                int streamSize = conn.getContentLength();
+                if (streamSize <= 0)
+                    Log.d(TAG, "streamSize = " + streamSize);
+                Log.d(TAG,"download size = "+streamSize);
+                if (iS == null) throw new RuntimeException("stream is null");
+                File file = new File(savePathDirectory);
+                if (!file.exists())
+                    file.mkdirs();
+                String savePath = savePathDirectory + "/" + fileName;
+                Log.d(TAG, "save path = " + savePath);
+                FileOutputStream fos = new FileOutputStream(savePath);
+                byte buff[] = new byte[1024];
+                do {
+                    int numberRead = iS.read(buff);
+                    if (numberRead == -1) {
+                        break;
+                    }
+                    fos.write(buff, 0, numberRead);
+                } while (true);
+                Log.d(TAG, "download " + serverPath + " success!");
+                fos.close();
+                iS.close();
+                mHandler.sendEmptyMessage(successMsg);
+                conn.disconnect();
+                return savePath;
+            }else {
+                Log.d(TAG,"getRespond code = "+conn.getResponseCode());
+                conn.disconnect();
+                return  "";
+            }
         }catch (Exception e) {
             Log.d(TAG,"Error: "+e.getMessage(),e);
             mHandler.sendEmptyMessageDelayed(errorMsg,ONE_SECOND);
