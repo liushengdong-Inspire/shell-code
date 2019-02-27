@@ -2,8 +2,6 @@ package vixtel.com.swfirstlogin;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
@@ -111,6 +109,10 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
                             }
                         }else {
                             String name[] = mp3NameInfo.getValue(musicNumber).split(".mp3");
+                            if (name[0].contains("[mqms2]")) {
+                                String delMqms2[] = name[0].split("\\[mqms2\\]");
+                                name[0] = delMqms2[0];
+                            }
                             mMusiName.setText(name[0]);
                         }
 
