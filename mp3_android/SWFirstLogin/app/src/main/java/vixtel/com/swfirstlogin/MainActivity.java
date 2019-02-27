@@ -8,11 +8,14 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
@@ -31,6 +34,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 public class MainActivity extends Activity implements View.OnClickListener,MediaPlayer.OnPreparedListener,MediaPlayer.OnCompletionListener{
 
@@ -44,6 +48,8 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
     private ProgressBar mProgress;
     private ListView mMusicInfoListView;
     private ImageView mImageView = null;
+    private CheckBox mAutoPlay = null;
+    private CheckBox mRandPlay = null;
     private boolean isStop = true; //停止
     private boolean isPause = false; //暂停
     private MediaPlayer mMediaPlayer = null;
@@ -63,6 +69,7 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
     private final static int MSG_INIT_PARAM = 4;
     private final static int MSG_SET_MUSIC_NAME = 5;
     private final static int MSG_DOWNLOAD_PICTURE = 6;
+    private final static int MSG_START_TO_PLAYER_MUSIC = 7;
 
     Mp3MapInfo mp3NameInfo;
     Mp3MapInfo mp3Info;
@@ -150,10 +157,23 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
                         }
                     }).start();
                     break;
+                case MSG_START_TO_PLAYER_MUSIC:
+                    if (mAutoPlay.isChecked()) {
+                        startPlayerMusic();
+                    }
+                    break;
             }
             return false;
         }
     });
+
+    private void  startPlayerMusic() {
+        Settings.Secure.putInt(getContentResolver(),"music_number",musicNumber);
+        musicPath = serverAddress + mp3NameInfo.getValue(musicNumber);
+        Log.d(TAG,"musicPath = "+musicPath+" musicNumber = "+musicNumber);
+        stopPlayer();
+        initPlayer(musicPath);
+    }
 
     private String downloadFunction(String filePath,int successMsg,int errorMsg) {
         Log.d(TAG,"Enter downloadFunction");
@@ -320,19 +340,51 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
             stringsArray[i] = mp3NameInfo.getValue(i);
         ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,stringsArray);
         mMusicInfoListView.setAdapter(arrayAdapter);
+        musicNumber = Settings.Secure.getInt(getContentResolver(),"music_number",0);
         mMusicInfoListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 Log.d(TAG,"select "+mp3NameInfo.getValue(i));
                 musicNumber = i;
-                String playUrl = serverAddress+mp3NameInfo.getValue(i);
-                musicPath = playUrl;
-                Log.d(TAG,"musicPath = "+musicPath);
-                stopPlayer();
-                initPlayer(musicPath);
+                startPlayerMusic();
             }
         });
-        //mHandler.sendEmptyMessage(MSG_PROGRESS_COUNTER);
+
+        //自动播放标记
+        mAutoPlay = (CheckBox)findViewById(R.id.auto_play_check);
+        int autoChecked = Settings.Secure.getInt(this.getContentResolver(),"auto_check",0);
+        if (autoChecked == 0)
+            mAutoPlay.setChecked(false);
+        else
+            mAutoPlay.setChecked(true);
+        mAutoPlay.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                if (b)
+                    Settings.Secure.putInt(MainActivity.this.getContentResolver(),"auto_check",1);
+                else
+                    Settings.Secure.putInt(MainActivity.this.getContentResolver(),"auto_check",0);
+            }
+        });
+
+        //随机播放标记
+        mRandPlay = (CheckBox)findViewById(R.id.rand_play_check);
+        int randChecked = Settings.Secure.getInt(this.getContentResolver(),"rand_check",0);
+        if (randChecked == 0)
+            mRandPlay.setChecked(false);
+        else
+            mRandPlay.setChecked(true);
+        mRandPlay.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                if (b)
+                    Settings.Secure.putInt(MainActivity.this.getContentResolver(),"rand_check",1);
+                else
+                    Settings.Secure.putInt(MainActivity.this.getContentResolver(),"rand_check",0);
+            }
+        });
+        isInit = true;
+        mHandler.sendEmptyMessage(MSG_START_TO_PLAYER_MUSIC);
     }
 
     private boolean initPlayer(String mp3Path) {
@@ -431,22 +483,28 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
                 stopPlayer();
                 break;
             case R.id.prevBtn:
-                musicNumber --;
-                if (musicNumber < 0) {
-                    musicNumber = mp3NameInfo.getInstance().size() - 1 ;
+                if (mRandPlay.isChecked()) {
+                    Random rn = new Random();
+                    musicNumber = rn.nextInt(mp3NameInfo.getInstance().size());
+                }else {
+                    musicNumber --;
+                    if (musicNumber < 0) {
+                        musicNumber = mp3NameInfo.getInstance().size() - 1 ;
+                    }
                 }
-                stopPlayer();
-                String namePrev = serverAddress+mp3NameInfo.getValue(musicNumber);
-                initPlayer(namePrev);
+                startPlayerMusic();
                 break;
             case R.id.nextBtn:
-                musicNumber ++;
-                if (musicNumber >= mp3NameInfo.getInstance().size() ) {
-                    musicNumber = 0;
+                if (mRandPlay.isChecked()) {
+                    Random rn = new Random();
+                    musicNumber = rn.nextInt(mp3NameInfo.getInstance().size());
+                }else {
+                    musicNumber++;
+                    if (musicNumber >= mp3NameInfo.getInstance().size()) {
+                        musicNumber = 0;
+                    }
                 }
-                stopPlayer();
-                String nameNext = serverAddress+mp3NameInfo.getValue(musicNumber);
-                initPlayer(nameNext);
+                startPlayerMusic();
                 break;
         }
     }
@@ -468,11 +526,21 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
     @Override
     public void onCompletion(MediaPlayer mediaPlayer) {
         Log.d(TAG,"onCompletion!");
-        musicNumber ++;
-        if (musicNumber >= mp3NameInfo.getInstance().size() ) {
-            musicNumber = 0;
+        if (!mAutoPlay.isChecked()) {
+            Log.d(TAG,"no auto play");
+            stopPlayer();
+            return;
         }
-        stopPlayer();
-        initPlayer(serverAddress+mp3NameInfo.getValue(musicNumber));
+
+        if (mRandPlay.isChecked()) {
+            Random rn = new Random();
+            musicNumber = rn.nextInt(mp3NameInfo.getInstance().size());
+        }else {
+            musicNumber++;
+            if (musicNumber >= mp3NameInfo.getInstance().size()) {
+                musicNumber = 0;
+            }
+        }
+        startPlayerMusic();
     }
 }

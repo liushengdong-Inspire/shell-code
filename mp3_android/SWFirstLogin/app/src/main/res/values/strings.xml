@@ -5,4 +5,6 @@
     <string name="stop_txxt">停止</string>
     <string name="next_txt">下一首</string>
     <string name="prev_txt">上一首</string>
+    <string name="auto_play">自动播放</string>
+    <string name="rand_play">随机播放</string>
 </resources>
