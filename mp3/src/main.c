@@ -44,7 +44,7 @@ int main(int argc,char *arv[])
 		second = second->next;
 		i ++;
 	}
-	LSD_INFO("Toast deal with %d files\n",i);
+	LSD_ERROR("Toast deal with %d files\n",i);
 	deal_with_JSON();
 	delete_directory_mp3_file_list(&header);
 	return 0;

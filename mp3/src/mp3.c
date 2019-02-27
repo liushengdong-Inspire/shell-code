@@ -224,7 +224,7 @@ void save_picture(char *mp3_path,int pic_pos,char *content_out,int frame_size,ch
 }
 
 // 解析帧内容信息
-int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos,char **save_path_out)
+int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos,char **save_path_out,char **title,char **singer)
 {
 	if( mp3_path == NULL )
 	{
@@ -341,11 +341,13 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos,char **
 		if( !strncmp(FrameID_array_info[info_positon],"标题",strlen("标题")))
 		{
 			insert_jscon_content(g_array,&g_obj,"title",content_out);
+			strncpy(*title,"title",strlen("title"));
 			//insert_jscon_content(g_array,&g_obj,"picpath","");
 		}
 		else if(!strncmp(FrameID_array_info[info_positon],"作者",strlen("作者")))
 		{
 			insert_jscon_content(g_array,&g_obj,"singer",content_out);
+			strncpy(*singer,"singer",strlen("singer"));
 			//insert_jscon_content(g_array,&g_obj,"picpath","");
 		}
 	}
@@ -440,22 +442,46 @@ int deal_ID3V2_info( char * mp3_file_name )
 	
 	cJSON_AddItemToArray(g_array,g_obj=cJSON_CreateObject());
 	cJSON_AddItemToObject(g_obj,"name",cJSON_CreateString(mp3_file_name));
-	insert_jscon_content(g_array,&g_obj,"singer","");
-	insert_jscon_content(g_array,&g_obj,"title","");
+	//insert_jscon_content(g_array,&g_obj,"singer","");
+	//insert_jscon_content(g_array,&g_obj,"title","");
 	char *save_path_out = (char*)malloc(sizeof(char)*BUF_SIZE);
 	if( save_path_out == NULL )
 	{
 		LSD_STDERROR("Malloc save_path_out Error:%s\n",strerror(errno));
 		return -1;
 	}
+	char *title = (char*)malloc(sizeof(char)*strlen("title"));
+	if( title == NULL )
+	{
+		LSD_STDERROR("Malloc title Error:%s\n",strerror(errno));
+	}
+	
+	char *singer = (char*)malloc(sizeof(char)*strlen("singer"));
+	if( title == NULL )
+	{
+		LSD_STDERROR("Malloc singer Error:%s\n",strerror(errno));
+	}
 	
 	memset(save_path_out,0,BUF_SIZE);
+	memset(title,0,strlen("title"));
+	memset(singer,0,strlen("singer"));
 	
 	for( i = 0; pos < frame_len; i++ )
 	{
 		//读取并且处理数据，将每次的位置返回
-		read_mp3_ID3VX_info_size(mp3_file_name,pos,&pos,&save_path_out);
+		read_mp3_ID3VX_info_size(mp3_file_name,pos,&pos,&save_path_out,&title,&singer);
 	}
+	
+	if( strlen(title) < strlen("title") )
+	{
+		insert_jscon_content(g_array,&g_obj,"title","");
+	}
+	
+	if( strlen(singer) < strlen("singer") )
+	{
+		insert_jscon_content(g_array,&g_obj,"singer","");
+	}
+	
 	if( strlen(save_path_out) < 4 )
 		insert_jscon_content(g_array,&g_obj,"picpath","");
 	else
