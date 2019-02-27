@@ -31,6 +31,7 @@ int main(int argc,char *arv[])
 		LSD_INFO("mp3 name :%s    type = %d\n",second->mp3_name,type);
 		if( type == -1 || type == 0 )
 		{
+			deal_UNKNOWN_MP3_info(second->mp3_name);
 			LSD_INFO("UNKNOWN!\n");
 		}
 		else if( type == 1 )

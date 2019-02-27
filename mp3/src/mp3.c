@@ -358,6 +358,16 @@ int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos,char **
 	return 0;
 }
 
+//处理未知 MP3 信息
+int deal_UNKNOWN_MP3_info(char *mp3_path) 
+{
+	if( g_array == NULL )
+	{
+		init_jscon_framework(&g_array);
+	}
+	add_jscon_content(g_array,g_obj,mp3_path,"","",NULL);
+}	
+
 //处理 ID3V1 版本相关信息
 int deal_ID3V1_info( char *mp3_file_name )
 {
