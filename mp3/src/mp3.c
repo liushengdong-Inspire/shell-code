@@ -127,6 +127,8 @@ int read_back_ID3V2_note_size(char *mp3_path)
 	
 }
 
+static int mp3_pic_number = 0;
+
 //保存图片到文件夹中
 void save_picture(char *mp3_path,int pic_pos,char *content_out,int frame_size,char **save_path_out)
 {
@@ -162,6 +164,8 @@ void save_picture(char *mp3_path,int pic_pos,char *content_out,int frame_size,ch
 	}
 	memset(save_path,0,BUF_SIZE);
 	snprintf(save_path,BUF_SIZE,"%s/%s%s",PIC_SAVE_PATH,mp3_path,file_type);
+	snprintf(save_path,BUF_SIZE,"%s/%d%s",PIC_SAVE_PATH,mp3_pic_number,file_type);
+	mp3_pic_number++;
 	
 	if(access(save_path,F_OK) != 0)
 		mkdir(PIC_SAVE_PATH,0755);
@@ -213,6 +217,8 @@ void save_picture(char *mp3_path,int pic_pos,char *content_out,int frame_size,ch
 		fclose(pic_fp);
 		return;
 	}
+	
+	LSD_ERROR("%s picture save to %s\n",mp3_path,save_path);
 	
 	memset(save_file_buf,0,pic_file_size);
 	fread(save_file_buf,pic_file_size,1,mp3_fp);

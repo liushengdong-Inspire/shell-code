@@ -80,6 +80,9 @@ int read_back_ID3V2_note_size(char *mp3_path);
 // 解析帧内容信息
 int read_mp3_ID3VX_info_size(char *mp3_path,int current_pos,int *now_pos,char **save_path_out,char **title,char **singer);
 
+//处理未知 MP3 信息
+int deal_UNKNOWN_MP3_info(char *mp3_path);
+
 //处理 ID3V1 版本相关信息
 int deal_ID3V1_info( char *mp3_file_name );
 
