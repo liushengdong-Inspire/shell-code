@@ -10,6 +10,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -57,6 +58,7 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
     private String serverAddress = "http://10.10.15.53/";
     private String musicPath  = "";
     private ProgressDialog mProgressDialog = null;
+    private boolean isLayoutLeft = true;
     private int musicNumber = 0;
     private int musicCounter = 0;
     private boolean isInit  = false;
@@ -70,6 +72,7 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
     private final static int MSG_SET_MUSIC_NAME = 5;
     private final static int MSG_DOWNLOAD_PICTURE = 6;
     private final static int MSG_START_TO_PLAYER_MUSIC = 7;
+    private final static int MSG_CHECK_FORCUSE_TO_LISTVIEW =8;
 
     Mp3MapInfo mp3NameInfo;
     Mp3MapInfo mp3Info;
@@ -142,6 +145,15 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
                                 Log.d(TAG, "error: " + e.getMessage(), e);
                             }
                         }
+                    }
+                    break;
+                case MSG_CHECK_FORCUSE_TO_LISTVIEW:
+                    if (!isLayoutLeft) {
+                        mMusicInfoListView.setSelection(musicNumber);
+                        mMusicInfoListView.requestFocus();
+                        Log.d(TAG, "request focus!");
+                    }else {
+                        mMusicInfoListView.setSelection(musicNumber);
                     }
                     break;
                 case MSG_DOWNLOAD_PICTURE:
@@ -519,6 +531,7 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
                 mediaPlayer.start();
                 mHandler.sendEmptyMessage(MSG_SET_MUSIC_NAME);
                 mHandler.sendEmptyMessageDelayed(MSG_PROGRESS_COUNTER,ONE_SECOND);
+                mHandler.sendEmptyMessage(MSG_CHECK_FORCUSE_TO_LISTVIEW);
             }
         }
     }
@@ -542,5 +555,20 @@ public class MainActivity extends Activity implements View.OnClickListener,Media
             }
         }
         startPlayerMusic();
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+                isLayoutLeft = true;
+                mPlayBtn.requestFocus();
+                break;
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+                isLayoutLeft = false;
+                mMusicInfoListView.requestFocus();
+                break;
+        }
+        return super.onKeyDown(keyCode, event);
     }
 }
